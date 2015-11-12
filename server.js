@@ -13,7 +13,7 @@ if (cluster.isMaster) {
 	}
 	worker.on('message', function(msg) {
 		switch(msg[type]) {
-			case: 'add':
+			case 'add':
 				logger.info('Adding');
 				break;
 			default:
