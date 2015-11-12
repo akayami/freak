@@ -5,6 +5,9 @@ var winston = require('winston');
 var bodyParser = require('body-parser');
 var ejsmate = require('ejs-mate');
 var logger = new(winston.Logger)(config.winston);
+var nodemailer = require('nodemailer');
+var transporter = nodemailer.createTransport();
+var hipchat = require('node-hipchat');
 
 var app = express();
 var server = require('http').Server(app);
@@ -30,7 +33,9 @@ app.post('/report/:item', function(req, res, next) {
 		res.sendStatus(200);
 	} else {
 		logger.info('Adding new item: ' + req.params.item);
+		console.log(req.body.alert);
 		items[req.params.item] = {
+			name: req.params.item,
 			frequency: req.body.frequency,
 			alert: req.body.alert,
 			failCount: 0,
@@ -50,14 +55,16 @@ app.post('/report/:item', function(req, res, next) {
 					logger.warn('Reseting');
 					this.item.failCount = 0;
 				}
-				logger.warn('Failed: ' + this.i + " - Count: " + this.item.failCount);
+				for(var i in this.item.alert) {
+					notify(this.item.alert[i], this.item);
+				}
+				logger.warn('Failed: ' + this.item.name + " - Count: " + this.item.failCount);
 			} else {
-				logger.info(this.i + " UP");
+				logger.info(this.item.name + " UP");
 			}
 			this.item.reported = false;
 		}.bind({
-			item: items[req.params.item],
-			i: req.params.item
+			item: items[req.params.item]
 		});
 		items[req.params.item].interval = setInterval(items[req.params.item].check, items[req.params.item].frequency);
 		res.sendStatus(200);
@@ -113,6 +120,35 @@ server.listen(config.port, function() {
 	}, config.selfcheck_freq - 1000);
 
 });
+
+function notify(alert, item) {
+	switch(alert.type) {
+		case 'email':
+			transporter.sendMail({
+				from: 'do-not-reply-crontol-freak@jomediainc.com',
+				to: alert.data.email,
+				subject: 'Crontol-Freak [' + item.name + '] - ' + item.failCount,
+				text: 'Item:' + item.name + ' Failed Count:' + item.failCount
+			});
+			logger.info('Email alert sent to:' + alert.data.email + ' for item:' + item.name);
+			break;
+		case 'hipchat':
+			var hc = new hipchat(alert.data.key);
+			hc.postMessage({
+				room: alert.data.room,
+				from: alert.data.from,
+				message: 'Item:' + item.name + ' Failed Count:' + item.failCount,
+				color: (alert.data.color ? alert.data.color : 'yellow')
+			}, function(data) {
+				console.log(data);
+			});
+		 	logger.info('Hipchat alert sent to:' + alert.data.room + ' as ' + alert.data.from  + ' for item:' + item.name);
+		 	break;
+		default:
+			logger.warn('Unsupported alert type' + alert.type);
+			break;
+	}
+}
 
 function addSelfTest() {
 	var body = JSON.stringify({
