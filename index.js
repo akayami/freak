@@ -22,10 +22,12 @@ app.set('views',__dirname + '/views');
 app.set('view engine', 'ejs'); // so you can render('index')
 
 
-app.post('/add/:item', function(req, res, next) {
+app.post('/report/:item', function(req, res, next) {
 	if (items[req.params.item]) {
-		logger.warn('Failed to add new item. Item already exists: ' + req.params.item);
-		res.sendStatus(409);
+		logger.info('Got a ping from: ' + req.params.item);
+		items[req.params.item].reported = true;
+		items[req.params.item].stamp = new Date().getTime();
+		res.sendStatus(200);
 	} else {
 		logger.info('Adding new item: ' + req.params.item);
 		items[req.params.item] = {
@@ -49,13 +51,10 @@ app.post('/add/:item', function(req, res, next) {
 					this.item.failCount = 0;
 				}
 				logger.warn('Failed: ' + this.i + " - Count: " + this.item.failCount);
-				// logger.info(this.item);
 			} else {
 				logger.info(this.i + " UP");
 			}
 			this.item.reported = false;
-			// clearTimeout(this.item.timeout);
-			// this.item.timeout = setTimeout(this.item.check, this.item.frequency);
 		}.bind({
 			item: items[req.params.item],
 			i: req.params.item
@@ -105,23 +104,14 @@ app.get('/status/:item', function(req, res, next) {
 	}
 });
 
-app.get('/report/:item', function(req, res, next) {
-	if (items[req.params.item]) {
-		logger.log('Got a ping from: ' + req.params.item);
-		items[req.params.item].reported = true;
-		items[req.params.item].stamp = new Date().getTime();
-		res.sendStatus(200);
-	} else {
-		logger.log('Unknown item: ' + req.params.item);
-		res.sendStatus(404);
-	}
-});
-
 server.listen(config.port, function() {
 	var address = server.address();
 	logger.log('Webserver is UP' + address.address + ":" + address.port);
 	addSelfTest();
-	setInterval(addSelfTest, 60000);
+	setInterval(function() {
+		addSelfTest();
+	}, config.selfcheck_freq - 1000);
+
 });
 
 function addSelfTest() {
@@ -139,19 +129,10 @@ function addSelfTest() {
 		host: 'localhost',
 		port: 8081,
 		method: 'POST',
-		path: '/add/selftest',
+		path: '/report/selftest',
 		headers: {
 			"Content-Type": "application/json",
 			"Content-Length": Buffer.byteLength(body)
 		}
 	}).end(body);
 }
-
-setInterval(function() {
-	http.request({
-		host: 'localhost',
-		port: 8081,
-		method: 'GET',
-		path: '/report/selftest'
-	}).end();
-}, config.selfcheck_freq - 1000);
