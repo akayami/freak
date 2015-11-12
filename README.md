@@ -11,6 +11,8 @@ POST
 
 Pings specific namespace, and set-ups monitoring. 
 
+Sample client:
+
 ```javascript
 var http = require('http');
 
