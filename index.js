@@ -33,7 +33,6 @@ app.post('/report/:item', function(req, res, next) {
 		res.sendStatus(200);
 	} else {
 		logger.info('Adding new item: ' + req.params.item);
-		console.log(req.body.alert);
 		items[req.params.item] = {
 			name: req.params.item,
 			frequency: req.body.frequency,
@@ -140,7 +139,11 @@ function notify(alert, item) {
 				message: 'Item:' + item.name + ' Failed Count:' + item.failCount,
 				color: (alert.data.color ? alert.data.color : 'yellow')
 			}, function(data) {
-				console.log(data);
+				if(data.status == 'sent') {
+					logger.info('Hipchat alert sent to:' + alert.data.room + ' as ' + alert.data.from  + ' for item:' + item.name);
+				} else {
+					logger.warn('Hipchat alert attempt failed with status' + data.status);
+				}
 			});
 		 	logger.info('Hipchat alert sent to:' + alert.data.room + ' as ' + alert.data.from  + ' for item:' + item.name);
 		 	break;
