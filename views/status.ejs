@@ -15,9 +15,10 @@
 		<pre>
 			Reported in last <%- item.frequency / 1000%> sec : <%- (item.reported ? 'Yes' : 'No')%>
 			Last Report: <%- new Date(Number(item.stamp)).toISOString()%>
-			Continous Failures: <%- item.failCount%>
+			Current Failure Count: <%- item.failCount%>
+			Last Failure Count: <%- item.previousFailCount%>
 			Silenced: <%- (item.silence != null ? ('Yes until: ' + new Date(Number(item.silenceStart) + Number(item.silenceMiliseconds)).toISOString()) : 'No')%>
 		</pre>
-	</section </body>
-
+	</section>
+</body>
 </html>

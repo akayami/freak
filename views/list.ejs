@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Status</title>
+	<style>
+		table {
+			width: 100%;
+			border: 1px solid #000000;
+		}
+		td {
+			border: 1px solid #000000;
+		}
+	</style>
+</head>
+
+<body>
+	<section>
+		<h1>List</h1>
+	</section>
+	<section>
+		<table>
+			<thead>
+				<tr>
+					<th>
+						Name
+					</th>
+					<th>
+						failCount
+					</th>
+					<th>
+						Last report
+					</th>
+				</tr>
+			</thead>
+			<tbody>
+				<% for(var i in items) { %>
+					<tr>
+						<td>
+							<a href="/status/<%-items[i].name %>"><%-items[i].name %></a>
+						</td>
+						<td>
+							<%-items[i].failCount %> [<%-items[i].previousFailCount %>]
+						</td>
+						<td>
+							Last Report: <%- new Date(Number(items[i].stamp)).toISOString()%>
+						</td>
+					</tr>
+				<% } %>
+			</tbody>
+		</table>
+	</section>
+</body>
+
+</html>

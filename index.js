@@ -29,6 +29,8 @@ app.post('/report/:item', function(req, res, next) {
 	if (items[req.params.item]) {
 		logger.info('Got a ping from: ' + req.params.item);
 		items[req.params.item].reported = true;
+		items[req.params.item].previousFailCount = items[req.params.item].failCount;
+		items[req.params.item].failCount = 0;
 		items[req.params.item].stamp = new Date().getTime();
 		res.sendStatus(200);
 	} else {
@@ -37,6 +39,7 @@ app.post('/report/:item', function(req, res, next) {
 			name: req.params.item,
 			frequency: req.body.frequency,
 			alert: req.body.alert,
+			previousFailCount: 0,
 			failCount: 0,
 			reported: false,
 			interval: null,
@@ -68,6 +71,10 @@ app.post('/report/:item', function(req, res, next) {
 		items[req.params.item].interval = setInterval(items[req.params.item].check, items[req.params.item].frequency);
 		res.sendStatus(200);
 	}
+});
+
+app.get('/list', function(req, res, next) {
+	res.render('list', {items: items})
 });
 
 app.get('/remove/:item', function(req, res, next) {
