@@ -8,6 +8,7 @@ var logger = new(winston.Logger)(config.winston);
 var nodemailer = require('nodemailer');
 var transporter = nodemailer.createTransport();
 var hipchat = require('node-hipchat');
+var sprintf = require("sprintf-js").sprintf;
 
 var app = express();
 var server = require('http').Server(app);
@@ -21,7 +22,7 @@ app.use(bodyParser.urlencoded({ // to support URL-encoded bodies
 }));
 app.engine('ejs', ejsmate);
 
-app.set('views',__dirname + '/views');
+app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs'); // so you can render('index')
 
 
@@ -57,9 +58,7 @@ app.post('/report/:item', function(req, res, next) {
 					logger.warn('Reseting');
 					this.item.failCount = 0;
 				}
-				for(var i in this.item.alert) {
-					notify(this.item.alert[i], this.item);
-				}
+				notify(this.item, 'Crontol-Freak [%(name)s] - Fail: %(failCount)s', 'Item: %(name)s - Failed Count: %(failCount)s');
 				logger.warn('Failed: ' + this.item.name + " - Count: " + this.item.failCount);
 			} else {
 				logger.info(this.item.name + " UP");
@@ -74,7 +73,9 @@ app.post('/report/:item', function(req, res, next) {
 });
 
 app.get('/list', function(req, res, next) {
-	res.render('list', {items: items})
+	res.render('list', {
+		items: items
+	})
 });
 
 app.get('/remove/:item', function(req, res, next) {
@@ -101,7 +102,11 @@ app.get('/silence/:item/:miliseconds', function(req, res, next) {
 			this.item.interval = setInterval(this.item.check, this.item.frequency);
 			this.item.silenceStart = null;
 			this.item.silence = null;
-		}.bind({item : items[req.params.item]}), items[req.params.item].silenceMiliseconds);
+			notify(this.item, 'Crontol-Freak [%(name)s] - Monitoring Reactivated', 'Item: %(name)s - Monitoring Reactivated');
+		}.bind({
+			item: items[req.params.item]
+		}), items[req.params.item].silenceMiliseconds);
+		notify(items[req.params.item], 'Crontol-Freak [%(name)s] - Silenced for %(silenceMiliseconds)s ms', 'Item: %(name)s - Silenced: %(silenceMiliseconds)s ms');
 		res.sendStatus(200);
 	} else {
 		res.sendStatus(404);
@@ -111,7 +116,10 @@ app.get('/silence/:item/:miliseconds', function(req, res, next) {
 
 app.get('/status/:item', function(req, res, next) {
 	if (items[req.params.item]) {
-		res.render('status', {item: items[req.params.item], name: req.params.item})
+		res.render('status', {
+			item: items[req.params.item],
+			name: req.params.item
+		})
 	} else {
 		res.sendStatus(404);
 	}
@@ -120,65 +128,70 @@ app.get('/status/:item', function(req, res, next) {
 server.listen(config.port, function() {
 	var address = server.address();
 	logger.log('Webserver is UP' + address.address + ":" + address.port);
-	addSelfTest();
-	setInterval(function() {
-		addSelfTest();
-	}, config.selfcheck_freq - 1000);
+	// addSelfTest();
+	// setInterval(function() {
+	// 	addSelfTest();
+	// }, config.selfcheck_freq - 1000);
 
 });
 
-function notify(alert, item) {
-	switch(alert.type) {
-		case 'email':
-			transporter.sendMail({
-				from: 'do-not-reply-crontol-freak@jomediainc.com',
-				to: alert.data.email,
-				subject: 'Crontol-Freak [' + item.name + '] - ' + item.failCount,
-				text: 'Item:' + item.name + ' Failed Count:' + item.failCount
-			});
-			logger.info('Email alert sent to:' + alert.data.email + ' for item:' + item.name);
-			break;
-		case 'hipchat':
-			var hc = new hipchat(alert.data.key);
-			hc.postMessage({
-				room: alert.data.room,
-				from: alert.data.from,
-				message: 'Item:' + item.name + ' Failed Count:' + item.failCount,
-				color: (alert.data.color ? alert.data.color : 'yellow')
-			}, function(data) {
-				if(data.status == 'sent') {
-					logger.info('Hipchat alert sent to:' + alert.data.room + ' as ' + alert.data.from  + ' for item:' + item.name);
-				} else {
-					logger.warn('Hipchat alert attempt failed with status' + data.status);
-				}
-			});
-		 	logger.info('Hipchat alert sent to:' + alert.data.room + ' as ' + alert.data.from  + ' for item:' + item.name);
-		 	break;
-		default:
-			logger.warn('Unsupported alert type' + alert.type);
-			break;
+function notify(item, msg, subject) {
+	for (var i in item.alert) {
+		var alert = item.alert[i];
+		switch (alert.type) {
+			case 'email':
+				transporter.sendMail({
+					from: 'do-not-reply-crontol-freak@jomediainc.com',
+					to: alert.data.email,
+					subject: sprintf(subject, item),
+					text: sprintf(msg, item)
+						// subject: 'Crontol-Freak [' + item.name + '] - ' + item.failCount,
+						// text: 'Item:' + item.name + ' Failed Count:' + item.failCount
+				});
+				logger.info('Email alert sent to:' + alert.data.email + ' for item:' + item.name);
+				break;
+			case 'hipchat':
+				var hc = new hipchat(alert.data.key);
+				hc.postMessage({
+					room: alert.data.room,
+					from: alert.data.from,
+					message: sprintf(msg, item),
+					color: (alert.data.color ? alert.data.color : 'yellow')
+				}, function(data) {
+					if (data.status == 'sent') {
+						logger.info('Hipchat alert sent to:' + alert.data.room + ' as ' + alert.data.from + ' for item:' + item.name);
+					} else {
+						logger.warn('Hipchat alert attempt failed with status' + data.status);
+					}
+				});
+				logger.info('Hipchat alert sent to:' + alert.data.room + ' as ' + alert.data.from + ' for item:' + item.name);
+				break;
+			default:
+				logger.warn('Unsupported alert type' + alert.type);
+				break;
+		}
 	}
 }
-
-function addSelfTest() {
-	var body = JSON.stringify({
-		frequency: config.selfcheck_freq,
-		alert: [{
-			type: 'email',
-			data: {
-				email: 'tomasz.rakowski@jomediainc.com'
-			}
-		}]
-	});
-
-	http.request({
-		host: 'localhost',
-		port: 8081,
-		method: 'POST',
-		path: '/report/selftest',
-		headers: {
-			"Content-Type": "application/json",
-			"Content-Length": Buffer.byteLength(body)
-		}
-	}).end(body);
-}
+//
+// function addSelfTest() {
+// 	var body = JSON.stringify({
+// 		frequency: config.selfcheck_freq,
+// 		alert: [{
+// 			type: 'email',
+// 			data: {
+// 				email: 'tomasz.rakowski@jomediainc.com'
+// 			}
+// 		}]
+// 	});
+//
+// 	http.request({
+// 		host: 'localhost',
+// 		port: 8081,
+// 		method: 'POST',
+// 		path: '/report/selftest',
+// 		headers: {
+// 			"Content-Type": "application/json",
+// 			"Content-Length": Buffer.byteLength(body)
+// 		}
+// 	}).end(body);
+// }

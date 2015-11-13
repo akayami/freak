@@ -31,6 +31,10 @@
 					<th>
 						Last report
 					</th>
+					<th>
+					</th>
+					<th>
+					</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -44,6 +48,12 @@
 						</td>
 						<td>
 							Last Report: <%- new Date(Number(items[i].stamp)).toISOString()%>
+						</td>
+						<td>
+							<a href="/silence/<%-items[i].name %>/600000" onclick="return confirm('Are you sure you want to silnce this?')">Silence for 10 minutes</a>
+						</td>
+						<td>
+							<a href="/remove/<%-items[i].name %>" onclick="return confirm('Are you sure you want to delete this?')">Delete</a>
 						</td>
 					</tr>
 				<% } %>

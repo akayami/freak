@@ -15,6 +15,7 @@
     "node-hipchat": "^0.4.5",
     "nodemailer": "^1.9.0",
     "plain-config": "0.0.3",
+    "sprintf-js": "^1.0.3",
     "winston": "^2.1.0"
   }
 }
