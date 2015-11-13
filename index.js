@@ -83,6 +83,9 @@ app.get('/remove/:item', function(req, res, next) {
 	if (items[req.params.item]) {
 		logger.info('Removing item: ' + req.params.item);
 		clearInterval(items[req.params.item].interval);
+		if(items[req.params.item].silence) {
+			clearTimeout(items[req.params.item].silence);
+		}
 		notify(items[req.params.item], 'Crontol-Freak [%(name)s] - Item Removed from Monitoring', 'Item: %(name)s - Item Removed from Monitoring');
 		delete items[req.params.item];
 		res.sendStatus(200);
@@ -98,6 +101,9 @@ app.get('/silence/:item/:miliseconds', function(req, res, next) {
 		items[req.params.item].silenceMiliseconds = req.params.miliseconds
 		clearInterval(items[req.params.item].interval);
 		items[req.params.item].silenceStart = new Date().getTime();
+		if(items[req.params.item].silence) {
+			clearTimeout(items[req.params.item].silence);
+		}
 		items[req.params.item].silence = setTimeout(function() {
 			logger.info('Silence is over, reseting interval');
 			this.item.interval = setInterval(this.item.check, this.item.frequency);
