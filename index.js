@@ -83,6 +83,7 @@ app.get('/remove/:item', function(req, res, next) {
 	if (items[req.params.item]) {
 		logger.info('Removing item: ' + req.params.item);
 		clearInterval(items[req.params.item].interval);
+		notify(items[req.params.item], 'Crontol-Freak [%(name)s] - Item Removed from Monitoring', 'Item: %(name)s - Item Removed from Monitoring');
 		delete items[req.params.item];
 		res.sendStatus(200);
 	} else {
@@ -172,26 +173,3 @@ function notify(item, msg, subject) {
 		}
 	}
 }
-//
-// function addSelfTest() {
-// 	var body = JSON.stringify({
-// 		frequency: config.selfcheck_freq,
-// 		alert: [{
-// 			type: 'email',
-// 			data: {
-// 				email: 'tomasz.rakowski@jomediainc.com'
-// 			}
-// 		}]
-// 	});
-//
-// 	http.request({
-// 		host: 'localhost',
-// 		port: 8081,
-// 		method: 'POST',
-// 		path: '/report/selftest',
-// 		headers: {
-// 			"Content-Type": "application/json",
-// 			"Content-Length": Buffer.byteLength(body)
-// 		}
-// 	}).end(body);
-// }
