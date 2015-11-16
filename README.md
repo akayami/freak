@@ -79,7 +79,7 @@ $encoded = json_encode($conf);
 
 $ch = curl_init();
 
-curl_setopt($ch, CURLOPT_URL,"http://localhost:8081/report/test-php");
+curl_setopt($ch, CURLOPT_URL,$target);
 curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
 curl_setopt($ch, CURLOPT_POST, 1);
 curl_setopt($ch, CURLOPT_POSTFIELDS, $encoded);
