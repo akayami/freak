@@ -63,3 +63,7 @@ UI
 /status/:item
 
 A way to view the state of a specific namespace
+
+/list
+
+List of all registered items
