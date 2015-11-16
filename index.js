@@ -39,6 +39,7 @@ app.post('/report/:item', function(req, res, next) {
 		items[req.params.item] = {
 			name: req.params.item,
 			frequency: req.body.frequency,
+			threshold: (req.body.threshold ? req.body.threshold : 0),
 			alert: req.body.alert,
 			previousFailCount: 0,
 			failCount: 0,
@@ -83,7 +84,7 @@ app.get('/remove/:item', function(req, res, next) {
 	if (items[req.params.item]) {
 		logger.info('Removing item: ' + req.params.item);
 		clearInterval(items[req.params.item].interval);
-		if(items[req.params.item].silence) {
+		if (items[req.params.item].silence) {
 			clearTimeout(items[req.params.item].silence);
 		}
 		notify(items[req.params.item], 'Crontol-Freak [%(name)s] - Item Removed from Monitoring', 'Item: %(name)s - Item Removed from Monitoring');
@@ -101,7 +102,7 @@ app.get('/silence/:item/:miliseconds', function(req, res, next) {
 		items[req.params.item].silenceMiliseconds = req.params.miliseconds
 		clearInterval(items[req.params.item].interval);
 		items[req.params.item].silenceStart = new Date().getTime();
-		if(items[req.params.item].silence) {
+		if (items[req.params.item].silence) {
 			clearTimeout(items[req.params.item].silence);
 		}
 		items[req.params.item].silence = setTimeout(function() {
@@ -143,39 +144,43 @@ server.listen(config.port, function() {
 });
 
 function notify(item, msg, subject) {
-	for (var i in item.alert) {
-		var alert = item.alert[i];
-		switch (alert.type) {
-			case 'email':
-				transporter.sendMail({
-					from: 'do-not-reply-crontol-freak@jomediainc.com',
-					to: alert.data.email,
-					subject: sprintf(subject, item),
-					text: sprintf(msg, item)
-						// subject: 'Crontol-Freak [' + item.name + '] - ' + item.failCount,
-						// text: 'Item:' + item.name + ' Failed Count:' + item.failCount
-				});
-				logger.info('Email alert sent to:' + alert.data.email + ' for item:' + item.name);
-				break;
-			case 'hipchat':
-				var hc = new hipchat(alert.data.key);
-				hc.postMessage({
-					room: alert.data.room,
-					from: alert.data.from,
-					message: sprintf(msg, item),
-					color: (alert.data.color ? alert.data.color : 'yellow')
-				}, function(data) {
-					if (data.status == 'sent') {
-						logger.info('Hipchat alert sent to:' + alert.data.room + ' as ' + alert.data.from + ' for item:' + item.name);
-					} else {
-						logger.warn('Hipchat alert attempt failed with status' + data.status);
-					}
-				});
-				logger.info('Hipchat alert sent to:' + alert.data.room + ' as ' + alert.data.from + ' for item:' + item.name);
-				break;
-			default:
-				logger.warn('Unsupported alert type' + alert.type);
-				break;
+	if (item.threshold < item.failCount) {
+		for (var i in item.alert) {
+			var alert = item.alert[i];
+			switch (alert.type) {
+				case 'email':
+					transporter.sendMail({
+						from: 'do-not-reply-crontol-freak@jomediainc.com',
+						to: alert.data.email,
+						subject: sprintf(subject, item),
+						text: sprintf(msg, item)
+							// subject: 'Crontol-Freak [' + item.name + '] - ' + item.failCount,
+							// text: 'Item:' + item.name + ' Failed Count:' + item.failCount
+					});
+					logger.info('Email alert sent to:' + alert.data.email + ' for item:' + item.name);
+					break;
+				case 'hipchat':
+					var hc = new hipchat(alert.data.key);
+					hc.postMessage({
+						room: alert.data.room,
+						from: alert.data.from,
+						message: sprintf(msg, item),
+						color: (alert.data.color ? alert.data.color : 'yellow')
+					}, function(data) {
+						if (data.status == 'sent') {
+							logger.info('Hipchat alert sent to:' + alert.data.room + ' as ' + alert.data.from + ' for item:' + item.name);
+						} else {
+							logger.warn('Hipchat alert attempt failed with status' + data.status);
+						}
+					});
+					logger.info('Hipchat alert sent to:' + alert.data.room + ' as ' + alert.data.from + ' for item:' + item.name);
+					break;
+				default:
+					logger.warn('Unsupported alert type' + alert.type);
+					break;
+			}
 		}
+	} else {
+		logger.info('Item ' + item.name +' raised alert but is below threshold of '  + item.threshold + '. Fail count: ' + item.failCount);
 	}
 }

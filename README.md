@@ -9,7 +9,7 @@ POST
 
 /report/:namespace
 
-Pings specific namespace, and set-ups monitoring. 
+Pings specific namespace, and set-ups monitoring.
 
 Sample client:
 
@@ -18,6 +18,7 @@ var http = require('http');
 
 var body = JSON.stringify({
 	frequency: 10000,
+	threshold: 5,	// Number of failures required before alerts are sent out
 	alert: [{
 		type: 'email',
 		data: {
