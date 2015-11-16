@@ -35,41 +35,46 @@ app.post('/report/:item', function(req, res, next) {
 		items[req.params.item].stamp = new Date().getTime();
 		res.sendStatus(200);
 	} else {
-		logger.info('Adding new item: ' + req.params.item);
-		items[req.params.item] = {
-			name: req.params.item,
-			frequency: req.body.frequency,
-			threshold: (req.body.threshold ? req.body.threshold : 0),
-			alert: req.body.alert,
-			previousFailCount: 0,
-			failCount: 0,
-			reported: false,
-			interval: null,
-			miliseconds: 0,
-			silence: null,
-			silenceStart: null,
-			stamp: new Date().getTime()
-		}
-		items[req.params.item].check = function() {
-			if (!this.item.reported) {
-				if (this.item.failCount != null) {
-					logger.warn('Adding');
-					this.item.failCount++;
-				} else {
-					logger.warn('Reseting');
-					this.item.failCount = 0;
-				}
-				notify(this.item, 'Crontol-Freak [%(name)s] - Fail: %(failCount)s', 'Item: %(name)s - Failed Count: %(failCount)s');
-				logger.warn('Failed: ' + this.item.name + " - Count: " + this.item.failCount);
-			} else {
-				logger.info(this.item.name + " UP");
+		if(req.body.frequency && req.body.alert) {
+			logger.info('Adding new item: ' + req.params.item);
+			items[req.params.item] = {
+				name: req.params.item,
+				frequency: req.body.frequency,
+				threshold: (req.body.threshold ? req.body.threshold : 0),
+				alert: req.body.alert,
+				previousFailCount: 0,
+				failCount: 0,
+				reported: false,
+				interval: null,
+				miliseconds: 0,
+				silence: null,
+				silenceStart: null,
+				stamp: new Date().getTime()
 			}
-			this.item.reported = false;
-		}.bind({
-			item: items[req.params.item]
-		});
-		items[req.params.item].interval = setInterval(items[req.params.item].check, items[req.params.item].frequency);
-		res.sendStatus(200);
+			items[req.params.item].check = function() {
+				if (!this.item.reported) {
+					if (this.item.failCount != null) {
+						logger.warn('Adding');
+						this.item.failCount++;
+					} else {
+						logger.warn('Reseting');
+						this.item.failCount = 0;
+					}
+					notify(this.item, 'Crontol-Freak [%(name)s] - Fail: %(failCount)s', 'Item: %(name)s - Failed Count: %(failCount)s');
+					logger.warn('Failed: ' + this.item.name + " - Count: " + this.item.failCount);
+				} else {
+					logger.info(this.item.name + " UP");
+				}
+				this.item.reported = false;
+			}.bind({
+				item: items[req.params.item]
+			});
+			items[req.params.item].interval = setInterval(items[req.params.item].check, items[req.params.item].frequency);
+			res.sendStatus(200);
+		} else {
+			logger.warn('Bad request received');
+			res.sendStatus(400);
+		}
 	}
 });
 
@@ -167,10 +172,13 @@ function notify(item, msg, subject) {
 						message: sprintf(msg, item),
 						color: (alert.data.color ? alert.data.color : 'yellow')
 					}, function(data) {
-						if (data.status == 'sent') {
+						if (data && data != null && data.status && data.status == 'sent') {
 							logger.info('Hipchat alert sent to:' + alert.data.room + ' as ' + alert.data.from + ' for item:' + item.name);
 						} else {
-							logger.warn('Hipchat alert attempt failed with status' + data.status);
+							logger.warn('Hipchat alert attempt failed');
+							if(data != null) {
+								logger.warn(data);
+							}
 						}
 					});
 					logger.info('Hipchat alert sent to:' + alert.data.room + ' as ' + alert.data.from + ' for item:' + item.name);
