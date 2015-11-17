@@ -5,6 +5,7 @@ var winston = require('winston');
 var bodyParser = require('body-parser');
 var ejsmate = require('ejs-mate');
 var logger = new(winston.Logger)(config.winston);
+
 var nodemailer = require('nodemailer');
 var transporter = nodemailer.createTransport();
 var hipchat = require('node-hipchat');
@@ -51,6 +52,11 @@ app.post('/report/:item', function(req, res, next) {
 				silenceStart: null,
 				stamp: new Date().getTime()
 			}
+
+			for(var x in config.defaultAlert) {
+				items[req.params.item].alert.push(config.defaultAlert[x]);
+			}
+
 			items[req.params.item].check = function() {
 				if (!this.item.reported) {
 					if (this.item.failCount != null) {
@@ -141,50 +147,47 @@ app.get('/status/:item', function(req, res, next) {
 server.listen(config.port, function() {
 	var address = server.address();
 	logger.log('Webserver is UP' + address.address + ":" + address.port);
-	// addSelfTest();
-	// setInterval(function() {
-	// 	addSelfTest();
-	// }, config.selfcheck_freq - 1000);
-
 });
 
 function notify(item, msg, subject) {
 	if (item.threshold < item.failCount) {
 		for (var i in item.alert) {
-			var alert = item.alert[i];
-			switch (alert.type) {
+			switch (item.alert[i].type) {
 				case 'email':
 					transporter.sendMail({
 						from: 'do-not-reply-crontol-freak@jomediainc.com',
-						to: alert.data.email,
+						to: item.alert[i].data.email,
 						subject: sprintf(subject, item),
 						text: sprintf(msg, item)
 							// subject: 'Crontol-Freak [' + item.name + '] - ' + item.failCount,
 							// text: 'Item:' + item.name + ' Failed Count:' + item.failCount
 					});
-					logger.info('Email alert sent to:' + alert.data.email + ' for item:' + item.name);
+					logger.info('Email alert sent to:' + item.alert[i].data.email + ' for item:' + item.name);
 					break;
 				case 'hipchat':
-					var hc = new hipchat(alert.data.key);
+					var hc = new hipchat(item.alert[i].data.key);
 					hc.postMessage({
-						room: alert.data.room,
-						from: alert.data.from,
+						room: item.alert[i].data.room,
+						from: item.alert[i].data.from,
 						message: sprintf(msg, item),
-						color: (alert.data.color ? alert.data.color : 'yellow')
+						color: (item.alert[i].data.color ? item.alert[i].data.color : 'yellow')
 					}, function(data) {
 						if (data && data != null && data.status && data.status == 'sent') {
-							logger.info('Hipchat alert sent to:' + alert.data.room + ' as ' + alert.data.from + ' for item:' + item.name);
+							logger.info('Hipchat alert sent to:' + this.item.data.room + ' as ' + this.item.data.from + ' for item:' + this.item.name);
 						} else {
 							logger.warn('Hipchat alert attempt failed');
 							if(data != null) {
 								logger.warn(data);
 							}
 						}
-					});
-					logger.info('Hipchat alert sent to:' + alert.data.room + ' as ' + alert.data.from + ' for item:' + item.name);
+					}.bind({item: item.alert[i]}));
+					logger.info('Hipchat alert sent to:' + item.alert[i].data.room + ' as ' + item.alert[i].data.from + ' for item:' + item.name);
+					break;
+				case 'custom':
+					item.alert[i].notify(sprintf(msg, item));
 					break;
 				default:
-					logger.warn('Unsupported alert type' + alert.type);
+					logger.warn('Unsupported alert type' + (item.alert[i].type ? item.alert[i].type : ' Undefined-type'));
 					break;
 			}
 		}
