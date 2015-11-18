@@ -1,4 +1,3 @@
-var winston = require('winston');
 var config = {};
 
 config._dep = {
