@@ -173,14 +173,14 @@ function notify(item, msg, subject) {
 						color: (item.alert[i].data.color ? item.alert[i].data.color : 'yellow')
 					}, function(data) {
 						if (data && data != null && data.status && data.status == 'sent') {
-							logger.info('Hipchat alert sent to:' + this.item.data.room + ' as ' + this.item.data.from + ' for item:' + this.item.name);
+							logger.info('Hipchat alert sent to:' + this.alert.data.room + ' as ' + this.alert.data.from + ' for item:' + this.item.name);
 						} else {
 							logger.warn('Hipchat alert attempt failed');
 							if(data != null) {
 								logger.warn(data);
 							}
 						}
-					}.bind({item: item.alert[i]}));
+					}.bind({item: item, alert: item.alert[i]}));
 					logger.info('Hipchat alert sent to:' + item.alert[i].data.room + ' as ' + item.alert[i].data.from + ' for item:' + item.name);
 					break;
 				case 'custom':
