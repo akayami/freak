@@ -3,22 +3,48 @@
 
 <head>
 	<title>Status</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 </head>
 
 <body>
-	<section>
-		<h1>Status -
-			<%-name%>
-		</h1>
-	</section>
-	<section>
-		<pre>
-			Reported in last <%- item.frequency / 1000%> sec : <%- (item.reported ? 'Yes' : 'No')%>
-			Last Report: <%- new Date(Number(item.stamp)).toISOString()%>
-			Current Failure Count: <%- item.failCount%>
-			Last Failure Count: <%- item.previousFailCount%>
-			Silenced: <%- (item.silence != null ? ('Yes until: ' + new Date(Number(item.silenceStart) + Number(item.silenceMiliseconds)).toISOString()) : 'No')%>
-		</pre>
-	</section>
-</body>
+	<div class="container" role="main">
+
+		<div class="page-header">
+			<h1>Status Crontroled <small>Freak</small></h1>
+		</div>
+
+		<div class="row">
+			<h1>Status - <%-name%></h1>
+		</div>
+
+		<div class="row">
+			<table class="table table-striped table-hover">
+				<tr>
+					<th>Reported Frequency</th>
+					<td><%- item.frequency / 1000%> sec</td>
+				</tr>
+				<tr>
+					<th>Reported?</th>
+					<td><%- (item.reported ? 'Yes' : 'No') %></td>
+				</tr>
+				<tr>
+					<th>Last Report</th>
+					<td><%- new Date(Number(item.stamp)).toISOString() %></td>
+				</tr>
+				<tr>
+					<th>Current Failure Count</th>
+					<td><%- item.failCount%></td>
+				</tr>
+				<tr>
+					<th>Last Failure Count</th>
+					<td><%- item.previousFailCount%></td>
+				</tr>
+				<tr>
+					<th>Silenced</th>
+					<td><%- (item.silence != null ? ('Yes until: ' + new Date(Number(item.silenceStart) + Number(item.silenceMiliseconds)).toISOString()) : 'No') %></td>
+				</tr>
+			</table>
+		</div>
+
+	</body>
 </html>
