@@ -147,6 +147,7 @@ app.get('/status/:item', function(req, res, next) {
 server.listen(config.port, function() {
 	var address = server.address();
 	logger.log('Webserver is UP' + address.address + ":" + address.port);
+	console.info('Listening at http://%s:%s', address.address, address.port);
 });
 
 function notify(item, msg, subject) {
@@ -154,44 +155,65 @@ function notify(item, msg, subject) {
 		for (var i in item.alert) {
 			switch (item.alert[i].type) {
 				case 'email':
-					transporter.sendMail({
-						from: 'do-not-reply-crontol-freak@jomediainc.com',
-						to: item.alert[i].data.email,
-						subject: sprintf(subject, item),
-						text: sprintf(msg, item)
-							// subject: 'Crontol-Freak [' + item.name + '] - ' + item.failCount,
-							// text: 'Item:' + item.name + ' Failed Count:' + item.failCount
-					});
-					logger.info('Email alert sent to:' + item.alert[i].data.email + ' for item:' + item.name);
-					break;
+				transporter.sendMail({
+					from: 'do-not-reply-crontol-freak@jomediainc.com',
+					to: item.alert[i].data.email,
+					subject: sprintf(subject, item),
+					text: sprintf(msg, item)
+					// subject: 'Crontol-Freak [' + item.name + '] - ' + item.failCount,
+					// text: 'Item:' + item.name + ' Failed Count:' + item.failCount
+				});
+				logger.info('Email alert sent to:' + item.alert[i].data.email + ' for item:' + item.name);
+				break;
 				case 'hipchat':
-					var hc = new hipchat(item.alert[i].data.key);
-					hc.postMessage({
-						room: item.alert[i].data.room,
-						from: item.alert[i].data.from,
-						message: sprintf(msg, item),
-						color: (item.alert[i].data.color ? item.alert[i].data.color : 'yellow')
-					}, function(data) {
-						if (data && data != null && data.status && data.status == 'sent') {
-							logger.info('Hipchat alert sent to:' + this.alert.data.room + ' as ' + this.alert.data.from + ' for item:' + this.item.name);
-						} else {
-							logger.warn('Hipchat alert attempt failed');
-							if(data != null) {
-								logger.warn(data);
-							}
+				var hc = new hipchat(item.alert[i].data.key);
+				hc.postMessage({
+					room: item.alert[i].data.room,
+					from: item.alert[i].data.from,
+					message: sprintf(msg, item),
+					color: (item.alert[i].data.color ? item.alert[i].data.color : 'yellow')
+				}, function(data) {
+					if (data && data != null && data.status && data.status == 'sent') {
+						logger.info('Hipchat alert sent to:' + this.alert.data.room + ' as ' + this.alert.data.from + ' for item:' + this.item.name);
+					} else {
+						logger.warn('Hipchat alert attempt failed');
+						if(data != null) {
+							logger.warn(data);
 						}
-					}.bind({item: item, alert: item.alert[i]}));
-					logger.info('Hipchat alert sent to:' + item.alert[i].data.room + ' as ' + item.alert[i].data.from + ' for item:' + item.name);
-					break;
+					}
+				}.bind({item: item, alert: item.alert[i]}));
+				logger.info('Hipchat alert sent to:' + item.alert[i].data.room + ' as ' + item.alert[i].data.from + ' for item:' + item.name);
+				break;
 				case 'custom':
-					item.alert[i].notify(sprintf(msg, item));
-					break;
+				item.alert[i].notify(sprintf(msg, item));
+				break;
 				default:
-					logger.warn('Unsupported alert type' + (item.alert[i].type ? item.alert[i].type : ' Undefined-type'));
-					break;
+				logger.warn('Unsupported alert type' + (item.alert[i].type ? item.alert[i].type : ' Undefined-type'));
+				break;
 			}
 		}
 	} else {
 		logger.info('Item ' + item.name +' raised alert but is below threshold of '  + item.threshold + '. Fail count: ' + item.failCount);
 	}
 }
+
+
+
+
+
+
+
+// If you need data to display, uncomment the following bloc (no alert)
+/*
+*/
+var body = JSON.stringify({frequency: 12300000, threshold: 5, alert: []})
+var http = require('http');
+setInterval(function() {
+	http.request({
+		host: 'localhost', port: config.port, method: 'POST',
+		path: '/report/test-' + Math.floor((Math.random() * 10) + 1),
+		headers: {"Content-Type": "application/json","Content-Length": Buffer.byteLength(body)}
+	}).end(body);
+}, 2000);
+/*
+*/

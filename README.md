@@ -101,13 +101,13 @@ GET
 
 Allows to remove monitoring of specific namespace
 
-/silence/:item/:miliseconds
+/silence/:namespace/:miliseconds
 
 Allows to silence alerts for specific namespace for specific amount of time
 
 UI
 =============
-/status/:item
+/status/:namespace
 
 A way to view the state of a specific namespace
 

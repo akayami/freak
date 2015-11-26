@@ -2,12 +2,14 @@
   "name": "crontol-freak",
   "version": "0.0.1",
   "description": "A system to watch crons",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "author": "Tomasz Rakowski",
   "license": "ISC",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {},
   "dependencies": {
     "body-parser": "^1.14.1",
     "ejs-mate": "^2.3.0",
@@ -17,5 +19,6 @@
     "plain-config": "0.0.3",
     "sprintf-js": "^1.0.3",
     "winston": "^2.1.0"
-  }
+  },
+  "devDependencies": {}
 }
