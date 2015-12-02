@@ -26,6 +26,7 @@ app.engine('ejs', ejsmate);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs'); // so you can render('index')
 
+app.use(express.static(__dirname + '/web'));
 
 app.post('/report/:item', function(req, res, next) {
 	if (items[req.params.item]) {
