@@ -198,21 +198,23 @@ function notify(item, msg, subject) {
 	}
 }
 
-
-
-
+var args = [];
+var tmp = process.argv.slice(2);
+for(var i = 0; i < tmp.length; i++) {
+	args[tmp[i]] = true;
+}
 
 
 
 // If you need data to display, uncomment the following bloc (no alert)
-/*
-var body = JSON.stringify({frequency: 12300000, threshold: 5, alert: []})
-var http = require('http');
-setInterval(function() {
-	http.request({
-		host: 'localhost', port: config.port, method: 'POST',
-		path: '/report/test-' + Math.floor((Math.random() * 10) + 1),
-		headers: {"Content-Type": "application/json","Content-Length": Buffer.byteLength(body)}
-	}).end(body);
-}, 2000);
-*/
+if (args['--dev']) {
+	var body = JSON.stringify({frequency: 12300000, threshold: 5, alert: []})
+	var http = require('http');
+	setInterval(function() {
+		http.request({
+			host: 'localhost', port: config.port, method: 'POST',
+			path: '/report/test-' + Math.floor((Math.random() * 10) + 1),
+			headers: {"Content-Type": "application/json","Content-Length": Buffer.byteLength(body)}
+		}).end(body);
+	}, 2000);
+}

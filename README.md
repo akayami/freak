@@ -114,3 +114,7 @@ A way to view the state of a specific namespace
 /list
 
 List of all registered items
+
+Server
+=============
+Launch with `--dev` parameter to autofill some fake data
