@@ -72,7 +72,7 @@ app.post('/report/:item', function(req, res, next) {
 						logger.warn('Reseting');
 						this.item.failCount = 0;
 					}
-					notify(this.item, 'Crontol-Freak [%(name)s] - Fail: %(failCount)s', 'Item: %(name)s - Failed Count: %(failCount)s');
+					notify(this.item, 'Crontol-Freak [%(name)s] - Fail: %(failCount)s\n\nhttp://' + req.hostname + ':' + config.port + '/status/%(name)s', 'Item: %(name)s - Failed');
 					logger.warn('Failed: ' + this.item.name + " - Count: " + this.item.failCount);
 				} else {
 					logger.info(this.item.name + " UP");
@@ -97,9 +97,9 @@ app.get('/list', function(req, res, next) {
 });
 
 app.get('/doc', function(req, res) {
-  var path = __dirname + '/README.md';
-  var file = fs.readFileSync(path, 'utf8');
-  // res.send(marked(file));
+	var path = __dirname + '/README.md';
+	var file = fs.readFileSync(path, 'utf8');
+	// res.send(marked(file));
 	res.render('doc', {
 		doc: marked(file)
 	})
