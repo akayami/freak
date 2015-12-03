@@ -6,20 +6,28 @@
 	<table class="table table-striped table-hover">
 		<tr>
 			<th>Name</th>
-			<th># Fail</th>
+			<th>Freq</th>
+			<th>Fail (prev)</th>
 			<th>Last report</th>
+			<th></th>
 			<th>10 min</th>
 			<th>1 hour</th>
 			<th>Delete</th>
 		</tr>
 		<% for(var i in items) { %>
 			<tr>
-				<td><a href="/status/<%-items[i].name %>"><%-items[i].name %></a></td>
+				<td><a href="/status/<%-items[i].name %>"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> <%-items[i].name %></a></td>
 				<td><%-items[i].failCount %> [<%-items[i].previousFailCount %>]</td>
+				<td><%-items[i].frequency %></td>
 				<td>Last Report: <%- new Date(Number(items[i].stamp)).toISOString()%></td>
-				<td><a href="/silence/<%-items[i].name %>/600000" onclick="return confirm('Are you sure you want to silnce this (10 minutes)?')">Mute</a></td>
-				<td><a href="/silence/<%-items[i].name %>/3600000" onclick="return confirm('Are you sure you want to silnce this (1 hour)?')">Mute</a></td>
-				<td><a href="/remove/<%-items[i].name %>" onclick="return confirm('Are you sure you want to delete this?')">Delete</a></td>
+				<td>
+					<% if(items[i].silence) { %>
+						<a href="/silence/<%-items[i].name %>/0"><span class="glyphicon glyphicon-play" aria-hidden="true"></span></a>
+					<% } %>
+				</td>
+				<td><a href="/silence/<%-items[i].name %>/600000" onclick="return confirm('Are you sure you want to silnce this (10 minutes)?')"><span class="glyphicon glyphicon-pause" aria-hidden="true"></span> Mute</a></td>
+				<td><a href="/silence/<%-items[i].name %>/3600000" onclick="return confirm('Are you sure you want to silnce this (1 hour)?')"><span class="glyphicon glyphicon-pause" aria-hidden="true"></span> Mute</a></td>
+				<td><a href="/remove/<%-items[i].name %>" onclick="return confirm('Are you sure you want to delete this?')"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span> Delete</a></td>
 			</tr>
 		<% } %>
 	</table>
