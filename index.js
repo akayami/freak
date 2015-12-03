@@ -5,6 +5,8 @@ var winston = require('winston');
 var bodyParser = require('body-parser');
 var ejsmate = require('ejs-mate');
 var logger = new(winston.Logger)(config.winston);
+var fs = require('fs');
+var marked = require('marked');
 
 var nodemailer = require('nodemailer');
 var transporter = nodemailer.createTransport();
@@ -91,6 +93,15 @@ app.post('/report/:item', function(req, res, next) {
 app.get('/list', function(req, res, next) {
 	res.render('list', {
 		items: items
+	})
+});
+
+app.get('/doc', function(req, res) {
+  var path = __dirname + '/README.md';
+  var file = fs.readFileSync(path, 'utf8');
+  // res.send(marked(file));
+	res.render('doc', {
+		doc: marked(file)
 	})
 });
 
@@ -200,6 +211,7 @@ function notify(item, msg, subject) {
 		logger.info('Item ' + item.name +' raised alert but is below threshold of '  + item.threshold + '. Fail count: ' + item.failCount);
 	}
 }
+
 
 
 
