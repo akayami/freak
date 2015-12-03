@@ -31,6 +31,9 @@ app.use(express.static(__dirname + '/web'));
 app.post('/report/:item', function(req, res, next) {
 	if (items[req.params.item]) {
 		logger.info('Got a ping from: ' + req.params.item);
+		if (req.body.frequency) {items[req.params.item].frequency = req.body.frequency;}
+		if (req.body.threshold) {items[req.params.item].threshold = req.body.threshold;}
+		if (req.body.alert) {items[req.params.item].alert = req.body.alert;}
 		items[req.params.item].reported = true;
 		items[req.params.item].previousFailCount = items[req.params.item].failCount;
 		items[req.params.item].failCount = 0;
@@ -198,19 +201,22 @@ function notify(item, msg, subject) {
 	}
 }
 
+
+
+
 var args = [];
 var tmp = process.argv.slice(2);
 for(var i = 0; i < tmp.length; i++) {
 	args[tmp[i]] = true;
 }
 
-
-
-// If you need data to display, uncomment the following bloc (no alert)
+/////////// Dev mode, prefill some data
+// node index.js --dev
 if (args['--dev']) {
-	var body = JSON.stringify({frequency: 12300000, threshold: 5, alert: []})
 	var http = require('http');
 	setInterval(function() {
+		var freq = (Math.floor((Math.random() * 10) + 1) * 1000000) + 10000000;
+		var body = JSON.stringify({frequency: freq, threshold: 5, alert: []});
 		http.request({
 			host: 'localhost', port: config.port, method: 'POST',
 			path: '/report/test-' + Math.floor((Math.random() * 10) + 1),
