@@ -8,6 +8,12 @@ config.port = 8081;
 
 config.selfcheck_freq = 10000;
 
+config.email = {
+	from: 'no-reply-crontol-freak@jomediainc.com',
+	smtpconf: null
+};
+
+
 config.winston = {
 	transports: [
 		new(config._dep.winston.transports.Console)({
@@ -16,7 +22,6 @@ config.winston = {
 		})
 	]
 };
-
 
 config.defaultAlert = [{
 	type: 'custom',

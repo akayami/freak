@@ -8,14 +8,16 @@ var logger = new(winston.Logger)(config.winston);
 var fs = require('fs');
 var marked = require('marked');
 
-var nodemailer = require('nodemailer');
-var transporter = nodemailer.createTransport();
-var hipchat = require('node-hipchat');
 var sprintf = require("sprintf-js").sprintf;
+var hipchat = require('node-hipchat');
+var nodemailer = require('nodemailer');
 
 var app = express();
 var server = require('http').Server(app);
 
+var transporter = nodemailer.createTransport(config.email.smtpconf);
+
+// Itemps to be reported
 var items = {}
 
 app.set('trust proxy');
@@ -166,18 +168,19 @@ server.listen(config.port, function() {
 });
 
 function notify(item, msg, subject) {
-	if (item.threshold == 0 || (item.failCount % item.threshold) == 0) {
+	if (item.threshold < item.failCount) {
 		for (var i in item.alert) {
 			switch (item.alert[i].type) {
 				case 'email':
 				transporter.sendMail({
-					from: 'do-not-reply-crontol-freak@jomediainc.com',
+					from: config.email.from,
 					to: item.alert[i].data.email,
 					subject: sprintf(subject, item),
 					text: sprintf(msg, item)
 				});
-				logger.info('Email alert sent to:' + item.alert[i].data.email + ' for item:' + item.name);
+				logger.info('Notifier - Email sent to:' + item.alert[i].data.email + ' for item:' + item.name);
 				break;
+
 				case 'hipchat':
 				var hc = new hipchat(item.alert[i].data.key);
 				hc.postMessage({
@@ -197,9 +200,11 @@ function notify(item, msg, subject) {
 				}.bind({item: item, alert: item.alert[i]}));
 				logger.info('Hipchat alert sent to:' + item.alert[i].data.room + ' as ' + item.alert[i].data.from + ' for item:' + item.name);
 				break;
+
 				case 'custom':
 				item.alert[i].notify(sprintf(msg, item));
 				break;
+
 				default:
 				logger.warn('Unsupported alert type' + (item.alert[i].type ? item.alert[i].type : ' Undefined-type'));
 				break;
@@ -223,10 +228,9 @@ for(var i = 0; i < tmp.length; i++) {
 /////////// Dev mode, prefill some data
 // node index.js --dev
 if (args['--dev']) {
-	var http = require('http');
 	setInterval(function() {
 		var freq = (Math.floor((Math.random() * 10) + 1) * 1000000) + 10000000;
-		var body = JSON.stringify({frequency: freq, threshold: Math.floor(Math.random() * 10), alert: []});
+		var body = JSON.stringify({frequency: freq, threshold: Math.floor(Math.random() * 10), alert: [{'type': 'email', 'data': {'email': 'patrick.salomon@jomediainc.com'}}]});
 		http.request({
 			host: 'localhost', port: config.port, method: 'POST',
 			path: '/report/test-' + Math.floor(Math.random() * 10),
