@@ -166,7 +166,7 @@ server.listen(config.port, function() {
 });
 
 function notify(item, msg, subject) {
-	if (item.threshold < item.failCount) {
+	if (item.threshold == 0 || (item.failCount % item.threshold) == 0) {
 		for (var i in item.alert) {
 			switch (item.alert[i].type) {
 				case 'email':
@@ -175,8 +175,6 @@ function notify(item, msg, subject) {
 					to: item.alert[i].data.email,
 					subject: sprintf(subject, item),
 					text: sprintf(msg, item)
-					// subject: 'Crontol-Freak [' + item.name + '] - ' + item.failCount,
-					// text: 'Item:' + item.name + ' Failed Count:' + item.failCount
 				});
 				logger.info('Email alert sent to:' + item.alert[i].data.email + ' for item:' + item.name);
 				break;
@@ -228,10 +226,10 @@ if (args['--dev']) {
 	var http = require('http');
 	setInterval(function() {
 		var freq = (Math.floor((Math.random() * 10) + 1) * 1000000) + 10000000;
-		var body = JSON.stringify({frequency: freq, threshold: 5, alert: []});
+		var body = JSON.stringify({frequency: freq, threshold: Math.floor(Math.random() * 10), alert: []});
 		http.request({
 			host: 'localhost', port: config.port, method: 'POST',
-			path: '/report/test-' + Math.floor((Math.random() * 10) + 1),
+			path: '/report/test-' + Math.floor(Math.random() * 10),
 			headers: {"Content-Type": "application/json","Content-Length": Buffer.byteLength(body)}
 		}).end(body);
 	}, 2000);
