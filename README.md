@@ -40,7 +40,7 @@ http.request({
 	host: 'localhost',
 	port: 8081,
 	method: 'POST',
-	path: '/report/test',
+	path: '/report/my-test-node',
 	headers: {
 		"Content-Type": "application/json",
 		"Content-Length": Buffer.byteLength(body)
@@ -52,7 +52,7 @@ Sample client:php
 
 ```php
 <?php
-$target = "http://localhost:8081/report/test-php";
+$target = "http://localhost:8081/report/my-test-php";
 
 $conf =
 	['frequency' => 10000,

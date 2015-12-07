@@ -5,15 +5,19 @@ var winston = require('winston');
 var bodyParser = require('body-parser');
 var ejsmate = require('ejs-mate');
 var logger = new(winston.Logger)(config.winston);
+var fs = require('fs');
+var marked = require('marked');
 
-var nodemailer = require('nodemailer');
-var transporter = nodemailer.createTransport();
-var hipchat = require('node-hipchat');
 var sprintf = require("sprintf-js").sprintf;
+var hipchat = require('node-hipchat');
+var nodemailer = require('nodemailer');
 
 var app = express();
 var server = require('http').Server(app);
 
+var transporter = nodemailer.createTransport(config.email.smtpconf);
+
+// Itemps to be reported
 var items = {}
 
 app.set('trust proxy');
@@ -70,7 +74,7 @@ app.post('/report/:item', function(req, res, next) {
 						logger.warn('Reseting');
 						this.item.failCount = 0;
 					}
-					notify(this.item, 'Crontol-Freak [%(name)s] - Fail: %(failCount)s', 'Item: %(name)s - Failed Count: %(failCount)s');
+					notify(this.item, 'Crontol-Freak [%(name)s] - Fail: %(failCount)s\n\nhttp://' + req.hostname + ':' + config.port + '/status/%(name)s', 'Item: %(name)s - Failed');
 					logger.warn('Failed: ' + this.item.name + " - Count: " + this.item.failCount);
 				} else {
 					logger.info(this.item.name + " UP");
@@ -91,6 +95,15 @@ app.post('/report/:item', function(req, res, next) {
 app.get('/list', function(req, res, next) {
 	res.render('list', {
 		items: items
+	})
+});
+
+app.get('/doc', function(req, res) {
+	var path = __dirname + '/README.md';
+	var file = fs.readFileSync(path, 'utf8');
+	// res.send(marked(file));
+	res.render('doc', {
+		doc: marked(file)
 	})
 });
 
@@ -160,15 +173,14 @@ function notify(item, msg, subject) {
 			switch (item.alert[i].type) {
 				case 'email':
 				transporter.sendMail({
-					from: 'do-not-reply-crontol-freak@jomediainc.com',
+					from: config.email.from,
 					to: item.alert[i].data.email,
 					subject: sprintf(subject, item),
 					text: sprintf(msg, item)
-					// subject: 'Crontol-Freak [' + item.name + '] - ' + item.failCount,
-					// text: 'Item:' + item.name + ' Failed Count:' + item.failCount
 				});
-				logger.info('Email alert sent to:' + item.alert[i].data.email + ' for item:' + item.name);
+				logger.info('Notifier - Email sent to:' + item.alert[i].data.email + ' for item:' + item.name);
 				break;
+
 				case 'hipchat':
 				var hc = new hipchat(item.alert[i].data.key);
 				hc.postMessage({
@@ -188,9 +200,11 @@ function notify(item, msg, subject) {
 				}.bind({item: item, alert: item.alert[i]}));
 				logger.info('Hipchat alert sent to:' + item.alert[i].data.room + ' as ' + item.alert[i].data.from + ' for item:' + item.name);
 				break;
+
 				case 'custom':
 				item.alert[i].notify(sprintf(msg, item));
 				break;
+
 				default:
 				logger.warn('Unsupported alert type' + (item.alert[i].type ? item.alert[i].type : ' Undefined-type'));
 				break;
@@ -204,6 +218,7 @@ function notify(item, msg, subject) {
 
 
 
+
 var args = [];
 var tmp = process.argv.slice(2);
 for(var i = 0; i < tmp.length; i++) {
@@ -213,13 +228,12 @@ for(var i = 0; i < tmp.length; i++) {
 /////////// Dev mode, prefill some data
 // node index.js --dev
 if (args['--dev']) {
-	var http = require('http');
 	setInterval(function() {
 		var freq = (Math.floor((Math.random() * 10) + 1) * 1000000) + 10000000;
-		var body = JSON.stringify({frequency: freq, threshold: 5, alert: []});
+		var body = JSON.stringify({frequency: freq, threshold: Math.floor(Math.random() * 10), alert: [{'type': 'email', 'data': {'email': 'patrick.salomon@jomediainc.com'}}]});
 		http.request({
 			host: 'localhost', port: config.port, method: 'POST',
-			path: '/report/test-' + Math.floor((Math.random() * 10) + 1),
+			path: '/report/test-' + Math.floor(Math.random() * 10),
 			headers: {"Content-Type": "application/json","Content-Length": Buffer.byteLength(body)}
 		}).end(body);
 	}, 2000);

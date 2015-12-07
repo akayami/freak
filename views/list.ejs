@@ -7,6 +7,7 @@
 		<tr>
 			<th>Name</th>
 			<th>Freq</th>
+			<th>Threshold</th>
 			<th>Fail (prev)</th>
 			<th>Last report</th>
 			<th></th>
@@ -17,8 +18,9 @@
 		<% for(var i in items) { %>
 			<tr>
 				<td><a href="/status/<%-items[i].name %>"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> <%-items[i].name %></a></td>
-				<td><%-items[i].failCount %> [<%-items[i].previousFailCount %>]</td>
 				<td><%-items[i].frequency %></td>
+				<td><%-items[i].threshold %></td>
+				<td><%-items[i].failCount %> (<%-items[i].previousFailCount %>)</td>
 				<td>Last Report: <%- new Date(Number(items[i].stamp)).toISOString()%></td>
 				<td>
 					<% if(items[i].silence) { %>
