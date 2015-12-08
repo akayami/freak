@@ -53,7 +53,7 @@ app.post('/report/:item', function(req, res, next) {
 				alert: req.body.alert,
 				previousFailCount: 0,
 				failCount: 0,
-				reported: false,
+				reported: true,
 				interval: null,
 				miliseconds: 0,
 				silence: null,
@@ -177,8 +177,17 @@ function notify(item, msg, subject) {
 					to: item.alert[i].data.email,
 					subject: sprintf(subject, item),
 					text: sprintf(msg, item)
+				}, function(error, info) {
+					if (error) {
+						if (error.response) {
+							logger.error(error + ' - ' + error.response + '(' + config.email.from + ')');
+						} else {
+							logger.error(error);
+						}
+						return;
+					}
+					logger.info('Notifier Email - Sent to:' + info.accepted + ' for item:' + item.name);
 				});
-				logger.info('Notifier - Email sent to:' + item.alert[i].data.email + ' for item:' + item.name);
 				break;
 
 				case 'hipchat':
