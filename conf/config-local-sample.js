@@ -1,21 +1,8 @@
 module.exports = function(config) {
 
-	config.defaultAlert = [{
-		type: 'custom',
-		backend: new(config._dep.winston.Logger)({
-			transports: [
-				new(config._dep.winston.transports.File)({
-					filename: '/tmp/crontol-freak1.log',
-					timestamp: true,
-					colorize: true
-				})
-			]
-		}),
-		notify: function(msg) {
-			this.backend.error(msg);
-		}
-	}];
+	// Override or add here what values you need
 
+	// config.port = 3000;
 
 	return config;
 }

@@ -240,6 +240,9 @@ if (args['--dev']) {
 	setInterval(function() {
 		var freq = (Math.floor((Math.random() * 10) + 1) * 1000000) + 10000000;
 		var body = JSON.stringify({frequency: freq, threshold: Math.floor(Math.random() * 10), alert: []});
+		// freq = 5000;
+		// var body = JSON.stringify({frequency: freq, threshold: Math.floor(Math.random() * 10), alert: [{'type': 'email', 'data': {'email': 'no-reply@infra.systems'}}]});
+		// var body = JSON.stringify({frequency: freq, threshold: Math.floor(Math.random() * 10), alert: [{'type': 'email', 'data': {'email': 'patrick.salomon@jomediainc.com'}}]});
 		http.request({
 			host: 'localhost', port: config.port, method: 'POST',
 			path: '/report/test-' + Math.floor(Math.random() * 10),
