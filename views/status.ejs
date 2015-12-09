@@ -28,5 +28,19 @@
 			<th>Silenced</th>
 			<td><%- (item.silence != null ? ('Yes until: ' + new Date(Number(item.silenceStart) + Number(item.silenceMiliseconds)).toISOString()) : 'No') %></td>
 		</tr>
+		<tr>
+			<th>Alerts:</th>
+			<td>
+				<table class="table table-bordered">
+				<% for(var i in item.alert) { %>
+						<tr>
+							<th><%- item.alert[i].type %></th>
+							<td><%- item.alert[i].type == 'email' ? item.alert[i].data.email : '' %></td>
+						</tr>
+				<% } %>
+				</table>
+			</td>
+		</tr>
+
 	</table>
 </div>
