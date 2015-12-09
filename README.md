@@ -113,7 +113,7 @@ A way to view the state of a specific namespace
 
 /list
 
-List of all registered items
+List of all registered namespaces
 
 Server
 =============

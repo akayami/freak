@@ -6,36 +6,36 @@
 	<table class="table table-striped table-hover">
 		<tr>
 			<th>Reported Frequency</th>
-			<td><%- item.frequency / 1000%> sec</td>
+			<td><%- namespace.frequency / 1000%> sec</td>
 		</tr>
 		<tr>
 			<th>Got report in time?</th>
-			<td><%- (item.reported ? 'Yes' : 'No') %></td>
+			<td><%- (namespace.reported ? 'Yes' : 'No') %></td>
 		</tr>
 		<tr>
 			<th>Last Report</th>
-			<td><%- new Date(Number(item.stamp)).toISOString() %></td>
+			<td><%- new Date(Number(namespace.stamp)).toISOString() %></td>
 		</tr>
 		<tr>
 			<th>Current Failure Count</th>
-			<td><%- item.failCount%></td>
+			<td><%- namespace.failCount%></td>
 		</tr>
 		<tr>
 			<th>Last Failure Count</th>
-			<td><%- item.previousFailCount%></td>
+			<td><%- namespace.previousFailCount%></td>
 		</tr>
 		<tr>
 			<th>Silenced</th>
-			<td><%- (item.silence != null ? ('Yes until: ' + new Date(Number(item.silenceStart) + Number(item.silenceMiliseconds)).toISOString()) : 'No') %></td>
+			<td><%- (namespace.silence != null ? ('Yes until: ' + new Date(Number(namespace.silenceStart) + Number(namespace.silenceMiliseconds)).toISOString()) : 'No') %></td>
 		</tr>
 		<tr>
 			<th>Alerts:</th>
 			<td>
 				<table class="table table-bordered">
-				<% for(var i in item.alert) { %>
+				<% for(var i in namespace.alert) { %>
 						<tr>
-							<th><%- item.alert[i].type %></th>
-							<td><%- item.alert[i].type == 'email' ? item.alert[i].data.email : '' %></td>
+							<th><%- namespace.alert[i].type %></th>
+							<td><%- namespace.alert[i].type == 'email' ? namespace.alert[i].data.email : '' %></td>
 						</tr>
 				<% } %>
 				</table>

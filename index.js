@@ -17,8 +17,8 @@ var server = require('http').Server(app);
 
 var transporter = nodemailer.createTransport(config.email.smtpconf);
 
-// Itemps to be reported
-var items = {}
+// Namespaces to be reported
+var namespaces = {}
 
 app.set('trust proxy');
 app.use(bodyParser.json()); // to support JSON-encoded bodies
@@ -32,22 +32,22 @@ app.set('view engine', 'ejs'); // so you can render('index')
 
 app.use(express.static(__dirname + '/web'));
 
-app.post('/report/:item', function(req, res, next) {
-	if (items[req.params.item]) {
-		logger.info('Got a ping from: ' + req.params.item);
-		if (req.body.frequency) {items[req.params.item].frequency = req.body.frequency;}
-		if (req.body.threshold) {items[req.params.item].threshold = req.body.threshold;}
-		if (req.body.alert) {items[req.params.item].alert = req.body.alert;}
-		items[req.params.item].reported = true;
-		items[req.params.item].previousFailCount = items[req.params.item].failCount;
-		items[req.params.item].failCount = 0;
-		items[req.params.item].stamp = new Date().getTime();
+app.post('/report/:namespace', function(req, res, next) {
+	if (namespaces[req.params.namespace]) {
+		logger.info('Got a ping from: ' + req.params.namespace);
+		if (req.body.frequency) {namespaces[req.params.namespace].frequency = req.body.frequency;}
+		if (req.body.threshold) {namespaces[req.params.namespace].threshold = req.body.threshold;}
+		if (req.body.alert) {namespaces[req.params.namespace].alert = req.body.alert;}
+		namespaces[req.params.namespace].reported = true;
+		namespaces[req.params.namespace].previousFailCount = namespaces[req.params.namespace].failCount;
+		namespaces[req.params.namespace].failCount = 0;
+		namespaces[req.params.namespace].stamp = new Date().getTime();
 		res.sendStatus(200);
 	} else {
 		if(req.body.frequency && req.body.alert) {
-			logger.info('Adding new item: ' + req.params.item);
-			items[req.params.item] = {
-				name: req.params.item,
+			logger.info('Adding new namespace: ' + req.params.namespace);
+			namespaces[req.params.namespace] = {
+				name: req.params.namespace,
 				frequency: req.body.frequency,
 				threshold: (req.body.threshold ? req.body.threshold : 0),
 				alert: req.body.alert,
@@ -62,28 +62,28 @@ app.post('/report/:item', function(req, res, next) {
 			}
 
 			for(var x in config.defaultAlert) {
-				items[req.params.item].alert.push(config.defaultAlert[x]);
+				namespaces[req.params.namespace].alert.push(config.defaultAlert[x]);
 			}
 
-			items[req.params.item].check = function() {
-				if (!this.item.reported) {
-					if (this.item.failCount != null) {
+			namespaces[req.params.namespace].check = function() {
+				if (!this.namespace.reported) {
+					if (this.namespace.failCount != null) {
 						logger.warn('Adding');
-						this.item.failCount++;
+						this.namespace.failCount++;
 					} else {
 						logger.warn('Reseting');
-						this.item.failCount = 0;
+						this.namespace.failCount = 0;
 					}
-					notify(this.item, 'Crontol-Freak [%(name)s] - Fail: %(failCount)s\n\nhttp://' + req.hostname + ':' + config.port + '/status/%(name)s', 'Item: %(name)s - Failed');
-					logger.warn('Failed: ' + this.item.name + " - Count: " + this.item.failCount);
+					notify(this.namespace, 'Crontol-Freak [%(name)s] - Fail: %(failCount)s\n\nhttp://' + req.hostname + ':' + config.port + '/status/%(name)s', 'namespace: %(name)s - Failed');
+					logger.warn('Failed: ' + this.namespace.name + " - Count: " + this.namespace.failCount);
 				} else {
-					logger.info(this.item.name + " UP");
+					logger.info(this.namespace.name + " UP");
 				}
-				this.item.reported = false;
+				this.namespace.reported = false;
 			}.bind({
-				item: items[req.params.item]
+				namespace: namespaces[req.params.namespace]
 			});
-			items[req.params.item].interval = setInterval(items[req.params.item].check, items[req.params.item].frequency);
+			namespaces[req.params.namespace].interval = setInterval(namespaces[req.params.namespace].check, namespaces[req.params.namespace].frequency);
 			res.sendStatus(200);
 		} else {
 			logger.warn('Bad request received');
@@ -94,7 +94,7 @@ app.post('/report/:item', function(req, res, next) {
 
 app.get('/list', function(req, res, next) {
 	res.render('list', {
-		items: items
+		namespaces: namespaces
 	})
 });
 
@@ -107,42 +107,42 @@ app.get('/doc', function(req, res) {
 	})
 });
 
-app.get('/remove/:item', function(req, res, next) {
+app.get('/remove/:namespace', function(req, res, next) {
 	logger.log('Removing');
-	if (items[req.params.item]) {
-		logger.info('Removing item: ' + req.params.item);
-		clearInterval(items[req.params.item].interval);
-		if (items[req.params.item].silence) {
-			clearTimeout(items[req.params.item].silence);
+	if (namespaces[req.params.namespace]) {
+		logger.info('Removing namespace: ' + req.params.namespace);
+		clearInterval(namespaces[req.params.namespace].interval);
+		if (namespaces[req.params.namespace].silence) {
+			clearTimeout(namespaces[req.params.namespace].silence);
 		}
-		notify(items[req.params.item], 'Crontol-Freak [%(name)s] - Item Removed from Monitoring', 'Item: %(name)s - Item Removed from Monitoring');
-		delete items[req.params.item];
+		notify(namespaces[req.params.namespace], 'Crontol-Freak [%(name)s] - namespace Removed from Monitoring', 'namespace: %(name)s - namespace Removed from Monitoring');
+		delete namespaces[req.params.namespace];
 		res.sendStatus(200);
 	} else {
-		logger.warn('Failed to removing item: ' + req.params.items);
+		logger.warn('Failed to removing namespace: ' + req.params.namespaces);
 		res.sendStatus(404);
 	}
 });
 
-app.get('/silence/:item/:miliseconds', function(req, res, next) {
-	if (items[req.params.item]) {
-		logger.info('Silence of ' + req.params.miliseconds + ' was set on ' + req.params.item)
-		items[req.params.item].silenceMiliseconds = req.params.miliseconds
-		clearInterval(items[req.params.item].interval);
-		items[req.params.item].silenceStart = new Date().getTime();
-		if (items[req.params.item].silence) {
-			clearTimeout(items[req.params.item].silence);
+app.get('/silence/:namespace/:miliseconds', function(req, res, next) {
+	if (namespaces[req.params.namespace]) {
+		logger.info('Silence of ' + req.params.miliseconds + ' was set on ' + req.params.namespace)
+		namespaces[req.params.namespace].silenceMiliseconds = req.params.miliseconds
+		clearInterval(namespaces[req.params.namespace].interval);
+		namespaces[req.params.namespace].silenceStart = new Date().getTime();
+		if (namespaces[req.params.namespace].silence) {
+			clearTimeout(namespaces[req.params.namespace].silence);
 		}
-		items[req.params.item].silence = setTimeout(function() {
+		namespaces[req.params.namespace].silence = setTimeout(function() {
 			logger.info('Silence is over, reseting interval');
-			this.item.interval = setInterval(this.item.check, this.item.frequency);
-			this.item.silenceStart = null;
-			this.item.silence = null;
-			notify(this.item, 'Crontol-Freak [%(name)s] - Monitoring Reactivated', 'Item: %(name)s - Monitoring Reactivated');
+			this.namespace.interval = setInterval(this.namespace.check, this.namespace.frequency);
+			this.namespace.silenceStart = null;
+			this.namespace.silence = null;
+			notify(this.namespace, 'Crontol-Freak [%(name)s] - Monitoring Reactivated', 'namespace: %(name)s - Monitoring Reactivated');
 		}.bind({
-			item: items[req.params.item]
-		}), items[req.params.item].silenceMiliseconds);
-		notify(items[req.params.item], 'Crontol-Freak [%(name)s] - Silenced for %(silenceMiliseconds)s ms', 'Item: %(name)s - Silenced: %(silenceMiliseconds)s ms');
+			namespace: namespaces[req.params.namespace]
+		}), namespaces[req.params.namespace].silenceMiliseconds);
+		notify(namespaces[req.params.namespace], 'Crontol-Freak [%(name)s] - Silenced for %(silenceMiliseconds)s ms', 'namespace: %(name)s - Silenced: %(silenceMiliseconds)s ms');
 		res.sendStatus(200);
 	} else {
 		res.sendStatus(404);
@@ -150,11 +150,11 @@ app.get('/silence/:item/:miliseconds', function(req, res, next) {
 });
 
 
-app.get('/status/:item', function(req, res, next) {
-	if (items[req.params.item]) {
+app.get('/status/:namespace', function(req, res, next) {
+	if (namespaces[req.params.namespace]) {
 		res.render('status', {
-			item: items[req.params.item],
-			name: req.params.item
+			namespace: namespaces[req.params.namespace],
+			name: req.params.namespace
 		})
 	} else {
 		res.sendStatus(404);
@@ -167,16 +167,16 @@ server.listen(config.port, function() {
 	console.info('Listening at http://%s:%s', address.address, address.port);
 });
 
-function notify(item, msg, subject) {
-	if (item.threshold < item.failCount) {
-		for (var i in item.alert) {
-			switch (item.alert[i].type) {
+function notify(namespace, msg, subject) {
+	if (namespace.threshold < namespace.failCount) {
+		for (var i in namespace.alert) {
+			switch (namespace.alert[i].type) {
 				case 'email':
 				transporter.sendMail({
 					from: config.email.from,
-					to: item.alert[i].data.email,
-					subject: sprintf(subject, item),
-					text: sprintf(msg, item)
+					to: namespace.alert[i].data.email,
+					subject: sprintf(subject, namespace),
+					text: sprintf(msg, namespace)
 				}, function(error, info) {
 					if (error) {
 						if (error.response) {
@@ -186,41 +186,41 @@ function notify(item, msg, subject) {
 						}
 						return;
 					}
-					logger.info('Notifier Email - Sent to:' + info.accepted + ' for item:' + item.name);
+					logger.info('Notifier Email - Sent to:' + info.accepted + ' for namespace:' + namespace.name);
 				});
 				break;
 
 				case 'hipchat':
-				var hc = new hipchat(item.alert[i].data.key);
+				var hc = new hipchat(namespace.alert[i].data.key);
 				hc.postMessage({
-					room: item.alert[i].data.room,
-					from: item.alert[i].data.from,
-					message: sprintf(msg, item),
-					color: (item.alert[i].data.color ? item.alert[i].data.color : 'yellow')
+					room: namespace.alert[i].data.room,
+					from: namespace.alert[i].data.from,
+					message: sprintf(msg, namespace),
+					color: (namespace.alert[i].data.color ? namespace.alert[i].data.color : 'yellow')
 				}, function(data) {
 					if (data && data != null && data.status && data.status == 'sent') {
-						logger.info('Hipchat alert sent to:' + this.alert.data.room + ' as ' + this.alert.data.from + ' for item:' + this.item.name);
+						logger.info('Hipchat alert sent to:' + this.alert.data.room + ' as ' + this.alert.data.from + ' for namespace:' + this.namespace.name);
 					} else {
 						logger.warn('Hipchat alert attempt failed');
 						if(data != null) {
 							logger.warn(data);
 						}
 					}
-				}.bind({item: item, alert: item.alert[i]}));
-				logger.info('Hipchat alert sent to:' + item.alert[i].data.room + ' as ' + item.alert[i].data.from + ' for item:' + item.name);
+				}.bind({namespace: namespace, alert: namespace.alert[i]}));
+				logger.info('Hipchat alert sent to:' + namespace.alert[i].data.room + ' as ' + namespace.alert[i].data.from + ' for namespace:' + namespace.name);
 				break;
 
 				case 'custom':
-				item.alert[i].notify(sprintf(msg, item));
+				namespace.alert[i].notify(sprintf(msg, namespace));
 				break;
 
 				default:
-				logger.warn('Unsupported alert type' + (item.alert[i].type ? item.alert[i].type : ' Undefined-type'));
+				logger.warn('Unsupported alert type' + (namespace.alert[i].type ? namespace.alert[i].type : ' Undefined-type'));
 				break;
 			}
 		}
 	} else {
-		logger.info('Item ' + item.name +' raised alert but is below threshold of '  + item.threshold + '. Fail count: ' + item.failCount);
+		logger.info('namespace ' + namespace.name +' raised alert but is below threshold of '  + namespace.threshold + '. Fail count: ' + namespace.failCount);
 	}
 }
 
@@ -242,7 +242,7 @@ if (args['--dev']) {
 		var body = JSON.stringify({frequency: freq, threshold: Math.floor(Math.random() * 10), alert: []});
 		// freq = 5000;
 		// var body = JSON.stringify({frequency: freq, threshold: Math.floor(Math.random() * 10), alert: [{'type': 'email', 'data': {'email': 'patrick.salomon@jomediainc.com'}}]});
-		// var body = JSON.stringify({frequency: freq, threshold: Math.floor(Math.random() * 10), alert: [{'type': 'email', 'data': {'email': 'patrick.salomon@jomediainc.com'}}, {'type': 'hipchat'}, {'type': 'toto'}]});
+		var body = JSON.stringify({frequency: freq, threshold: Math.floor(Math.random() * 10), alert: [{'type': 'email', 'data': {'email': 'patrick.salomon@jomediainc.com'}}, {'type': 'hipchat'}, {'type': 'toto'}]});
 		http.request({
 			host: 'localhost', port: config.port, method: 'POST',
 			path: '/report/test-' + Math.floor(Math.random() * 10),
