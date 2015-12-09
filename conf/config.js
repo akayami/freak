@@ -6,13 +6,10 @@ config._dep = {
 
 config.port = 8081;
 
-config.selfcheck_freq = 10000;
-
 config.email = {
-	from: 'no-reply-crontol-freak@jomediainc.com',
+	from: 'no-reply-crontol-freak@infra.systems',
 	smtpconf: null
 };
-
 
 config.winston = {
 	transports: [

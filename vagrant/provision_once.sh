@@ -19,10 +19,10 @@ sudo apt-get install -y openssl
 
 echo "============================== Installing NodeJs"
 cd /tmp
-sudo curl -sS https://nodejs.org/dist/latest-v5.x/node-v5.1.1-linux-x64.tar.gz | tar -xvz
-sudo mv node-v5.1.1-linux-x64 /usr/local/
-sudo ln -s /usr/local/node-v5.1.1-linux-x64/bin/node /usr/local/sbin/node
-sudo ln -s /usr/local/node-v5.1.1-linux-x64/bin/npm /usr/local/sbin/npm
+sudo curl -sS https://nodejs.org/dist/latest-v5.x/node-v5.2.0-linux-x64.tar.gz | tar -xvz
+sudo mv node-v5.2.0-linux-x64 /usr/local/
+sudo ln -s /usr/local/node-v5.2.0-linux-x64/bin/node /usr/local/sbin/node
+sudo ln -s /usr/local/node-v5.2.0-linux-x64/bin/npm /usr/local/sbin/npm
 
 echo "============================== Removing unused packaged"
 sudo apt-get -y autoremove
