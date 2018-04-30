@@ -5,9 +5,15 @@
   "author": "Tomasz Rakowski",
   "license": "ISC",
   "main": "index.js",
+  "pre-commit": [
+    "lint-check",
+    "test"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "test": "node_modules/.bin/mocha",
+    "start": "node index.js",
+    "lint-check": "node_modules/.bin/eslint --quiet .",
+    "lint": "node_modules/.bin/eslint --fix ."
   },
   "repository": {},
   "dependencies": {
@@ -21,5 +27,10 @@
     "sprintf-js": "^1.0.3",
     "winston": "^2.1.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "eslint": "^4.19.1",
+    "mocha": "^5.1.1",
+    "pre-commit": "^1.2.2"
+  }
 }

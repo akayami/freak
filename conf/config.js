@@ -1,8 +1,8 @@
-var config = {};
+const config = {};
 
 config._dep = {
 	winston: require('winston')
-}
+};
 
 config.port = 8081;
 

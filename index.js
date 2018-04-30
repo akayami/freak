@@ -1,24 +1,24 @@
-var config = require('plain-config')();
-var express = require('express');
-var http = require('http');
-var winston = require('winston');
-var bodyParser = require('body-parser');
-var ejsmate = require('ejs-mate');
-var logger = new(winston.Logger)(config.winston);
-var fs = require('fs');
-var marked = require('marked');
+const config = require('plain-config')();
+const express = require('express');
+const http = require('http');
+const winston = require('winston');
+const bodyParser = require('body-parser');
+const ejsmate = require('ejs-mate');
+const logger = new (winston.Logger)(config.winston);
+const fs = require('fs');
+const marked = require('marked');
 
-var sprintf = require("sprintf-js").sprintf;
-var hipchat = require('node-hipchat');
-var nodemailer = require('nodemailer');
+const sprintf = require('sprintf-js').sprintf;
+const hipchat = require('node-hipchat');
+const nodemailer = require('nodemailer');
 
-var app = express();
-var server = require('http').Server(app);
+const app = express();
+const server = require('http').Server(app);
 
-var transporter = nodemailer.createTransport(config.email.smtpconf);
+const transporter = nodemailer.createTransport(config.email.smtpconf);
 
 // Namespaces to be reported
-var namespaces = {}
+const namespaces = {};
 
 app.set('trust proxy');
 app.use(bodyParser.json()); // to support JSON-encoded bodies
@@ -32,19 +32,25 @@ app.set('view engine', 'ejs'); // so you can render('index')
 
 app.use(express.static(__dirname + '/web'));
 
-app.post('/report/:namespace', function(req, res, next) {
+app.post('/report/:namespace', function (req, res) {
 	if (namespaces[req.params.namespace]) {
 		logger.info('Got a ping from: ' + req.params.namespace);
-		if (req.body.frequency) {namespaces[req.params.namespace].frequency = req.body.frequency;}
-		if (req.body.threshold) {namespaces[req.params.namespace].threshold = req.body.threshold;}
-		if (req.body.alert) {namespaces[req.params.namespace].alert = req.body.alert;}
+		if (req.body.frequency) {
+			namespaces[req.params.namespace].frequency = req.body.frequency;
+		}
+		if (req.body.threshold) {
+			namespaces[req.params.namespace].threshold = req.body.threshold;
+		}
+		if (req.body.alert) {
+			namespaces[req.params.namespace].alert = req.body.alert;
+		}
 		namespaces[req.params.namespace].reported = true;
 		namespaces[req.params.namespace].previousFailCount = namespaces[req.params.namespace].failCount;
 		namespaces[req.params.namespace].failCount = 0;
 		namespaces[req.params.namespace].stamp = new Date().getTime();
 		res.sendStatus(200);
 	} else {
-		if(req.body.frequency && req.body.alert) {
+		if (req.body.frequency && req.body.alert) {
 			logger.info('Adding new namespace: ' + req.params.namespace);
 			namespaces[req.params.namespace] = {
 				name: req.params.namespace,
@@ -59,13 +65,13 @@ app.post('/report/:namespace', function(req, res, next) {
 				silence: null,
 				silenceStart: null,
 				stamp: new Date().getTime()
-			}
+			};
 
-			for(var x in config.defaultAlert) {
+			for (const x in config.defaultAlert) {
 				namespaces[req.params.namespace].alert.push(config.defaultAlert[x]);
 			}
 
-			namespaces[req.params.namespace].check = function() {
+			namespaces[req.params.namespace].check = function () {
 				if (!this.namespace.reported) {
 					if (this.namespace.failCount != null) {
 						logger.warn('Adding');
@@ -75,9 +81,9 @@ app.post('/report/:namespace', function(req, res, next) {
 						this.namespace.failCount = 0;
 					}
 					notify(this.namespace, 'Crontol-Freak [%(name)s] - Fail: %(failCount)s\n\nhttp://' + req.hostname + ':' + config.port + '/status/%(name)s', 'namespace: %(name)s - Failed');
-					logger.warn('Failed: ' + this.namespace.name + " - Count: " + this.namespace.failCount);
+					logger.warn('Failed: ' + this.namespace.name + ' - Count: ' + this.namespace.failCount);
 				} else {
-					logger.info(this.namespace.name + " UP");
+					logger.info(this.namespace.name + ' UP');
 				}
 				this.namespace.reported = false;
 			}.bind({
@@ -92,22 +98,22 @@ app.post('/report/:namespace', function(req, res, next) {
 	}
 });
 
-app.get('/list', function(req, res, next) {
+app.get('/list', function (req, res) {
 	res.render('list', {
 		namespaces: namespaces
-	})
+	});
 });
 
-app.get('/doc', function(req, res) {
-	var path = __dirname + '/README.md';
-	var file = fs.readFileSync(path, 'utf8');
+app.get('/doc', function (req, res) {
+	const path = __dirname + '/README.md';
+	const file = fs.readFileSync(path, 'utf8');
 	// res.send(marked(file));
 	res.render('doc', {
 		doc: marked(file)
-	})
+	});
 });
 
-app.get('/remove/:namespace', function(req, res, next) {
+app.get('/remove/:namespace', function (req, res) {
 	logger.log('Removing');
 	if (namespaces[req.params.namespace]) {
 		logger.info('Removing namespace: ' + req.params.namespace);
@@ -124,16 +130,16 @@ app.get('/remove/:namespace', function(req, res, next) {
 	}
 });
 
-app.get('/silence/:namespace/:miliseconds', function(req, res, next) {
+app.get('/silence/:namespace/:miliseconds', function (req, res) {
 	if (namespaces[req.params.namespace]) {
-		logger.info('Silence of ' + req.params.miliseconds + ' was set on ' + req.params.namespace)
-		namespaces[req.params.namespace].silenceMiliseconds = req.params.miliseconds
+		logger.info('Silence of ' + req.params.miliseconds + ' was set on ' + req.params.namespace);
+		namespaces[req.params.namespace].silenceMiliseconds = req.params.miliseconds;
 		clearInterval(namespaces[req.params.namespace].interval);
 		namespaces[req.params.namespace].silenceStart = new Date().getTime();
 		if (namespaces[req.params.namespace].silence) {
 			clearTimeout(namespaces[req.params.namespace].silence);
 		}
-		namespaces[req.params.namespace].silence = setTimeout(function() {
+		namespaces[req.params.namespace].silence = setTimeout(function () {
 			logger.info('Silence is over, reseting interval');
 			this.namespace.interval = setInterval(this.namespace.check, this.namespace.frequency);
 			this.namespace.silenceStart = null;
@@ -150,34 +156,34 @@ app.get('/silence/:namespace/:miliseconds', function(req, res, next) {
 });
 
 
-app.get('/status/:namespace', function(req, res, next) {
+app.get('/status/:namespace', function (req, res) {
 	if (namespaces[req.params.namespace]) {
 		res.render('status', {
 			namespace: namespaces[req.params.namespace],
 			name: req.params.namespace
-		})
+		});
 	} else {
 		res.sendStatus(404);
 	}
 });
 
-server.listen(config.port, function() {
-	var address = server.address();
-	logger.log('Webserver is UP' + address.address + ":" + address.port);
+server.listen(config.port, function () {
+	const address = server.address();
+	logger.log('Webserver is UP' + address.address + ':' + address.port);
 	console.info('Listening at http://%s:%s', address.address, address.port);
 });
 
 function notify(namespace, msg, subject) {
 	if (namespace.threshold < namespace.failCount) {
-		for (var i in namespace.alert) {
+		for (const i in namespace.alert) {
 			switch (namespace.alert[i].type) {
-				case 'email':
+			case 'email': {
 				transporter.sendMail({
 					from: config.email.from,
 					to: namespace.alert[i].data.email,
 					subject: sprintf(subject, namespace),
 					text: sprintf(msg, namespace)
-				}, function(error, info) {
+				}, function (error, info) {
 					if (error) {
 						if (error.response) {
 							logger.error(error + ' - ' + error.response + '(' + config.email.from + ')');
@@ -189,64 +195,71 @@ function notify(namespace, msg, subject) {
 					logger.info('Notifier Email - Sent to:' + info.accepted + ' for namespace:' + namespace.name);
 				});
 				break;
+			}
 
-				case 'hipchat':
-				var hc = new hipchat(namespace.alert[i].data.key);
+			case 'hipchat': {
+				const hc = new hipchat(namespace.alert[i].data.key);
 				hc.postMessage({
 					room: namespace.alert[i].data.room,
 					from: namespace.alert[i].data.from,
 					message: sprintf(msg, namespace),
 					color: (namespace.alert[i].data.color ? namespace.alert[i].data.color : 'yellow')
-				}, function(data) {
+				}, function (data) {
 					if (data && data != null && data.status && data.status == 'sent') {
 						logger.info('Hipchat alert sent to:' + this.alert.data.room + ' as ' + this.alert.data.from + ' for namespace:' + this.namespace.name);
 					} else {
 						logger.warn('Hipchat alert attempt failed');
-						if(data != null) {
+						if (data != null) {
 							logger.warn(data);
 						}
 					}
 				}.bind({namespace: namespace, alert: namespace.alert[i]}));
 				logger.info('Hipchat alert sent to:' + namespace.alert[i].data.room + ' as ' + namespace.alert[i].data.from + ' for namespace:' + namespace.name);
 				break;
-
-				case 'custom':
+			}
+			case 'custom': {
 				namespace.alert[i].notify(sprintf(msg, namespace));
 				break;
+			}
 
-				default:
+			default: {
 				logger.warn('Unsupported alert type' + (namespace.alert[i].type ? namespace.alert[i].type : ' Undefined-type'));
 				break;
 			}
+			}
 		}
 	} else {
-		logger.info('namespace ' + namespace.name +' raised alert but is below threshold of '  + namespace.threshold + '. Fail count: ' + namespace.failCount);
+		logger.info('namespace ' + namespace.name + ' raised alert but is below threshold of ' + namespace.threshold + '. Fail count: ' + namespace.failCount);
 	}
 }
 
 
-
-
-
-var args = [];
-var tmp = process.argv.slice(2);
-for(var i = 0; i < tmp.length; i++) {
+const args = [];
+const tmp = process.argv.slice(2);
+for (let i = 0; i < tmp.length; i++) {
 	args[tmp[i]] = true;
 }
 
 /////////// Dev mode, prefill some data
 // node index.js --dev
 if (args['--dev']) {
-	setInterval(function() {
-		var freq = (Math.floor((Math.random() * 10) + 1) * 1000000) + 10000000;
-		var body = JSON.stringify({frequency: freq, threshold: Math.floor(Math.random() * 10), alert: []});
+	setInterval(function () {
+		const freq = (Math.floor((Math.random() * 10) + 1) * 1000000) + 10000000;
+		//var body = JSON.stringify({frequency: freq, threshold: Math.floor(Math.random() * 10), alert: []});
 		// freq = 5000;
 		// var body = JSON.stringify({frequency: freq, threshold: Math.floor(Math.random() * 10), alert: [{'type': 'email', 'data': {'email': 'patrick.salomon@jomediainc.com'}}]});
-		var body = JSON.stringify({frequency: freq, threshold: Math.floor(Math.random() * 10), alert: [{'type': 'email', 'data': {'email': 'patrick.salomon@jomediainc.com'}}, {'type': 'hipchat'}, {'type': 'toto'}]});
+		const body = JSON.stringify({
+			frequency: freq,
+			threshold: Math.floor(Math.random() * 10),
+			alert: [{
+				'type': 'email',
+				'data': {'email': 'patrick.salomon@jomediainc.com'}
+			}, {'type': 'hipchat'}, {'type': 'toto'}]
+		});
 		http.request({
 			host: 'localhost', port: config.port, method: 'POST',
 			path: '/report/test-' + Math.floor(Math.random() * 10),
-			headers: {"Content-Type": "application/json","Content-Length": Buffer.byteLength(body)}
+			headers: {'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body)}
 		}).end(body);
 	}, 2000);
 }
