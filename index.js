@@ -1,24 +1,19 @@
 const config = require('plain-config')();
 const express = require('express');
 const http = require('http');
-const winston = require('winston');
 const bodyParser = require('body-parser');
 const ejsmate = require('ejs-mate');
-const logger = new (winston.Logger)(config.winston);
+//const console = new (winston.Logger)(config.winston);
 const fs = require('fs');
 const marked = require('marked');
-
-const sprintf = require('sprintf-js').sprintf;
-const hipchat = require('node-hipchat');
-const nodemailer = require('nodemailer');
 
 const app = express();
 const server = require('http').Server(app);
 
-const transporter = nodemailer.createTransport(config.email.smtpconf);
-
 // Namespaces to be reported
 const namespaces = {};
+
+const notify = require('./lib/notify');
 
 app.set('trust proxy');
 app.use(bodyParser.json()); // to support JSON-encoded bodies
@@ -34,7 +29,7 @@ app.use(express.static(__dirname + '/web'));
 
 app.post('/report/:namespace', function (req, res) {
 	if (namespaces[req.params.namespace]) {
-		logger.info('Got a ping from: ' + req.params.namespace);
+		console.info('Got a ping from: ' + req.params.namespace);
 		if (req.body.frequency) {
 			namespaces[req.params.namespace].frequency = req.body.frequency;
 		}
@@ -51,7 +46,7 @@ app.post('/report/:namespace', function (req, res) {
 		res.sendStatus(200);
 	} else {
 		if (req.body.frequency && req.body.alert) {
-			logger.info('Adding new namespace: ' + req.params.namespace);
+			console.info('Adding new namespace: ' + req.params.namespace);
 			namespaces[req.params.namespace] = {
 				name: req.params.namespace,
 				frequency: req.body.frequency,
@@ -64,7 +59,8 @@ app.post('/report/:namespace', function (req, res) {
 				miliseconds: 0,
 				silence: null,
 				silenceStart: null,
-				stamp: new Date().getTime()
+				stamp: new Date().getTime(),
+				statusURL: 'http://' + req.hostname + ':' + config.port + '/status/%(name)s'
 			};
 
 			for (const x in config.defaultAlert) {
@@ -74,16 +70,16 @@ app.post('/report/:namespace', function (req, res) {
 			namespaces[req.params.namespace].check = function () {
 				if (!this.namespace.reported) {
 					if (this.namespace.failCount != null) {
-						logger.warn('Adding');
+						console.warn('Adding');
 						this.namespace.failCount++;
 					} else {
-						logger.warn('Reseting');
+						console.warn('Reseting');
 						this.namespace.failCount = 0;
 					}
-					notify(this.namespace, 'Crontol-Freak [%(name)s] - Fail: %(failCount)s\n\nhttp://' + req.hostname + ':' + config.port + '/status/%(name)s', 'namespace: %(name)s - Failed');
-					logger.warn('Failed: ' + this.namespace.name + ' - Count: ' + this.namespace.failCount);
+					notify(this.namespace);
+					console.warn('Failed: ' + this.namespace.name + ' - Count: ' + this.namespace.failCount);
 				} else {
-					logger.info(this.namespace.name + ' UP');
+					console.info(this.namespace.name + ' UP');
 				}
 				this.namespace.reported = false;
 			}.bind({
@@ -92,7 +88,7 @@ app.post('/report/:namespace', function (req, res) {
 			namespaces[req.params.namespace].interval = setInterval(namespaces[req.params.namespace].check, namespaces[req.params.namespace].frequency);
 			res.sendStatus(200);
 		} else {
-			logger.warn('Bad request received');
+			console.warn('Bad request received');
 			res.sendStatus(400);
 		}
 	}
@@ -114,9 +110,9 @@ app.get('/doc', function (req, res) {
 });
 
 app.get('/remove/:namespace', function (req, res) {
-	logger.log('Removing');
+	console.log('Removing');
 	if (namespaces[req.params.namespace]) {
-		logger.info('Removing namespace: ' + req.params.namespace);
+		console.info('Removing namespace: ' + req.params.namespace);
 		clearInterval(namespaces[req.params.namespace].interval);
 		if (namespaces[req.params.namespace].silence) {
 			clearTimeout(namespaces[req.params.namespace].silence);
@@ -125,14 +121,14 @@ app.get('/remove/:namespace', function (req, res) {
 		delete namespaces[req.params.namespace];
 		res.sendStatus(200);
 	} else {
-		logger.warn('Failed to removing namespace: ' + req.params.namespaces);
+		console.warn('Failed to removing namespace: ' + req.params.namespaces);
 		res.sendStatus(404);
 	}
 });
 
 app.get('/silence/:namespace/:miliseconds', function (req, res) {
 	if (namespaces[req.params.namespace]) {
-		logger.info('Silence of ' + req.params.miliseconds + ' was set on ' + req.params.namespace);
+		console.info('Silence of ' + req.params.miliseconds + ' was set on ' + req.params.namespace);
 		namespaces[req.params.namespace].silenceMiliseconds = req.params.miliseconds;
 		clearInterval(namespaces[req.params.namespace].interval);
 		namespaces[req.params.namespace].silenceStart = new Date().getTime();
@@ -140,7 +136,7 @@ app.get('/silence/:namespace/:miliseconds', function (req, res) {
 			clearTimeout(namespaces[req.params.namespace].silence);
 		}
 		namespaces[req.params.namespace].silence = setTimeout(function () {
-			logger.info('Silence is over, reseting interval');
+			console.info('Silence is over, reseting interval');
 			this.namespace.interval = setInterval(this.namespace.check, this.namespace.frequency);
 			this.namespace.silenceStart = null;
 			this.namespace.silence = null;
@@ -169,69 +165,9 @@ app.get('/status/:namespace', function (req, res) {
 
 server.listen(config.port, function () {
 	const address = server.address();
-	logger.log('Webserver is UP' + address.address + ':' + address.port);
-	console.info('Listening at http://%s:%s', address.address, address.port);
+	//console.info('Webserver is UP' + address.address + ':' + address.port);
+	console.info('Listening on http://%s:%s', address.address, address.port);
 });
-
-function notify(namespace, msg, subject) {
-	if (namespace.threshold < namespace.failCount) {
-		for (const i in namespace.alert) {
-			switch (namespace.alert[i].type) {
-			case 'email': {
-				transporter.sendMail({
-					from: config.email.from,
-					to: namespace.alert[i].data.email,
-					subject: sprintf(subject, namespace),
-					text: sprintf(msg, namespace)
-				}, function (error, info) {
-					if (error) {
-						if (error.response) {
-							logger.error(error + ' - ' + error.response + '(' + config.email.from + ')');
-						} else {
-							logger.error(error);
-						}
-						return;
-					}
-					logger.info('Notifier Email - Sent to:' + info.accepted + ' for namespace:' + namespace.name);
-				});
-				break;
-			}
-
-			case 'hipchat': {
-				const hc = new hipchat(namespace.alert[i].data.key);
-				hc.postMessage({
-					room: namespace.alert[i].data.room,
-					from: namespace.alert[i].data.from,
-					message: sprintf(msg, namespace),
-					color: (namespace.alert[i].data.color ? namespace.alert[i].data.color : 'yellow')
-				}, function (data) {
-					if (data && data != null && data.status && data.status == 'sent') {
-						logger.info('Hipchat alert sent to:' + this.alert.data.room + ' as ' + this.alert.data.from + ' for namespace:' + this.namespace.name);
-					} else {
-						logger.warn('Hipchat alert attempt failed');
-						if (data != null) {
-							logger.warn(data);
-						}
-					}
-				}.bind({namespace: namespace, alert: namespace.alert[i]}));
-				logger.info('Hipchat alert sent to:' + namespace.alert[i].data.room + ' as ' + namespace.alert[i].data.from + ' for namespace:' + namespace.name);
-				break;
-			}
-			case 'custom': {
-				namespace.alert[i].notify(sprintf(msg, namespace));
-				break;
-			}
-
-			default: {
-				logger.warn('Unsupported alert type' + (namespace.alert[i].type ? namespace.alert[i].type : ' Undefined-type'));
-				break;
-			}
-			}
-		}
-	} else {
-		logger.info('namespace ' + namespace.name + ' raised alert but is below threshold of ' + namespace.threshold + '. Fail count: ' + namespace.failCount);
-	}
-}
 
 
 const args = [];
