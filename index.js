@@ -2,7 +2,8 @@ const config = require('plain-config')();
 const express = require('express');
 const http = require('http');
 const bodyParser = require('body-parser');
-const ejsmate = require('ejs-mate');
+//const ejs = require('ejs');
+//const ejsmate = require('ejs-mate');
 //const console = new (winston.Logger)(config.winston);
 const fs = require('fs');
 const marked = require('marked');
@@ -20,7 +21,6 @@ app.use(bodyParser.json()); // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({ // to support URL-encoded bodies
 	extended: true
 }));
-app.engine('ejs', ejsmate);
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs'); // so you can render('index')
@@ -94,13 +94,13 @@ app.post('/report/:namespace', function (req, res) {
 	}
 });
 
-app.get('/list', function (req, res) {
+app.get('/ui/list', function (req, res) {
 	res.render('list', {
 		namespaces: namespaces
 	});
 });
 
-app.get('/doc', function (req, res) {
+app.get('/ui/doc', function (req, res) {
 	const path = __dirname + '/README.md';
 	const file = fs.readFileSync(path, 'utf8');
 	// res.send(marked(file));
@@ -109,7 +109,7 @@ app.get('/doc', function (req, res) {
 	});
 });
 
-app.get('/remove/:namespace', function (req, res) {
+app.get('/ui/remove/:namespace', function (req, res) {
 	console.log('Removing');
 	if (namespaces[req.params.namespace]) {
 		console.info('Removing namespace: ' + req.params.namespace);
@@ -126,7 +126,7 @@ app.get('/remove/:namespace', function (req, res) {
 	}
 });
 
-app.get('/silence/:namespace/:miliseconds', function (req, res) {
+app.get('/ui/silence/:namespace/:miliseconds', function (req, res) {
 	if (namespaces[req.params.namespace]) {
 		console.info('Silence of ' + req.params.miliseconds + ' was set on ' + req.params.namespace);
 		namespaces[req.params.namespace].silenceMiliseconds = req.params.miliseconds;
@@ -152,7 +152,7 @@ app.get('/silence/:namespace/:miliseconds', function (req, res) {
 });
 
 
-app.get('/status/:namespace', function (req, res) {
+app.get('/ui/status/:namespace', function (req, res) {
 	if (namespaces[req.params.namespace]) {
 		res.render('status', {
 			namespace: namespaces[req.params.namespace],
@@ -162,6 +162,9 @@ app.get('/status/:namespace', function (req, res) {
 		res.sendStatus(404);
 	}
 });
+
+
+console.log(config);
 
 server.listen(config.port, function () {
 	const address = server.address();
@@ -189,7 +192,7 @@ if (args['--dev']) {
 			threshold: Math.floor(Math.random() * 10),
 			alert: [{
 				'type': 'email',
-				'data': {'email': 'patrick.salomon@jomediainc.com'}
+				'data': {'email': 'dude@localhost'}
 			}, {'type': 'hipchat'}, {'type': 'toto'}]
 		});
 		http.request({

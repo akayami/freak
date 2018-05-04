@@ -105,6 +105,26 @@ Allows to remove monitoring of specific namespace
 
 Allows to silence alerts for specific namespace for specific amount of time
 
+
+Body Placeholders
+=============
+```javascript
+let data = {
+	name: 'your-namespace',
+	frequency: 1000,
+	threshold: 5,
+	previousFailCount: 0,
+	failCount: 0,
+	reported: true,
+	interval: null,
+	miliseconds: 0,
+	silence: null,
+	silenceStart: null,
+	stamp: 123422342342, // time in miliseconds
+	statusURL: 'http://freak.yourdomain.com/status/namespace'
+}
+```
+
 UI
 =============
 /status/:namespace

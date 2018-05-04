@@ -1,6 +1,4 @@
-<% layout('_base') -%>
-
-<%- partial('_header', {title: 'List', description: 'Crontroled Freak'}) -%>
+<%-include('partials/header')%>
 
 <div class="row">
 	<table class="table table-striped table-hover">
@@ -18,7 +16,7 @@
 		</tr>
 		<% for(var i in namespaces) { %>
 			<tr>
-				<td><a href="/status/<%- namespaces[i].name %>"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> <%- namespaces[i].name %></a></td>
+				<td><a href="/ui/status/<%- namespaces[i].name %>"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> <%- namespaces[i].name %></a></td>
 				<td><%- namespaces[i].reported ? '<span class="text-muted">OK</span>' : '<strong class="bg-danger">Failed</strong>' %></td>
 				<td>
 					<% if(namespaces[i].silence) { %>
@@ -28,11 +26,12 @@
 				<td><%- namespaces[i].frequency %></td>
 				<td><%- namespaces[i].threshold %></td>
 				<td><%- namespaces[i].failCount %> (<%- namespaces[i].previousFailCount %>)</td>
-				<td>Last Report: <%- new Date(Number(namespaces[i].stamp)).toISOString()%></td>
-				<td><a href="/silence/<%- namespaces[i].name %>/600000" onclick="return confirm('Are you sure you want to silnce this (10 minutes)?')"><span class="glyphicon glyphicon-pause" aria-hidden="true"></span> Mute</a></td>
-				<td><a href="/silence/<%- namespaces[i].name %>/3600000" onclick="return confirm('Are you sure you want to silnce this (1 hour)?')"><span class="glyphicon glyphicon-pause" aria-hidden="true"></span> Mute</a></td>
-				<td><a href="/remove/<%- namespaces[i].name %>" onclick="return confirm('Are you sure you want to delete this?')"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span> Delete</a></td>
+				<td><%- new Date(Number(namespaces[i].stamp)).toISOString()%></td>
+				<td><a href="/ui/silence/<%- namespaces[i].name %>/600000" onclick="return confirm('Are you sure you want to silnce this (10 minutes)?')"><span class="glyphicon glyphicon-pause" aria-hidden="true"></span> Mute</a></td>
+				<td><a href="/ui/silence/<%- namespaces[i].name %>/3600000" onclick="return confirm('Are you sure you want to silnce this (1 hour)?')"><span class="glyphicon glyphicon-pause" aria-hidden="true"></span> Mute</a></td>
+				<td><a href="/ui/remove/<%- namespaces[i].name %>" onclick="return confirm('Are you sure you want to delete this?')"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span> Delete</a></td>
 			</tr>
 		<% } %>
 	</table>
 </div>
+<%-include('partials/footer')%>
