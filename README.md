@@ -61,14 +61,14 @@ $conf =
 		[
 			'type' => 'email',
 			'data' => [
-				'email'=> 'tomasz.rakowski@jomediainc.com'
+				'email'=> 'email@localhost'
 			]
 		],
 		[
 			'type'=> 'hipchat',
 			'data'=> [
-				'room'=> 'adcenter',
-				'key'=> 'bff56b3a6af14313a46b2981428cf1',
+				'room'=> 'room',
+				'key'=> 'key',
 				'from'=> 'cron',
 				'color'=> 'yellow'
 			]
