@@ -84,7 +84,7 @@ app.post('/report/:namespace', function (req, res) {
 				silence: null,
 				silenceStart: null,
 				stamp: new Date().getTime(),
-				statusURL: 'http://' + req.hostname + ':' + config.port + '/ui/status/' + req.params.namespace
+				statusURL: 'https://' + req.hostname + ':' + config.port + '/ui/status/' + req.params.namespace
 			};
 
 			for (const x in config.defaultAlert) {
