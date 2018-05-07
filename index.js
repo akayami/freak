@@ -22,6 +22,30 @@ app.use(bodyParser.urlencoded({ // to support URL-encoded bodies
 	extended: true
 }));
 
+
+app.use((req, res, next) => {
+	if (!config.devSkipHttps) {
+		if (req.headers && req.headers['x-forwarded-proto'] && req.headers['x-forwarded-proto']) {
+			const l = req.headers['x-forwarded-proto'].split(',');
+			if (l[0] === 'http') {
+				res.redirect(301, 'https://' + req.headers.host + req.url);
+				return;
+			}
+		}
+	} else {
+		console.log('Skipping https redirect due to config settings');
+	}
+	next();
+});
+
+app.use((req, res, next) => {
+	if (req.url === '/') {
+		return res.redirect('/ui/list');
+	}
+	next();
+});
+
+
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs'); // so you can render('index')
 
