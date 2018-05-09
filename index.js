@@ -54,7 +54,9 @@ app.use(express.static(__dirname + '/web'));
 app.post('/report/:namespace', function (req, res) {
 	if (namespaces[req.params.namespace]) {
 		console.info('Got a ping from: ' + req.params.namespace);
+		let resetInterval = false;
 		if (req.body.frequency) {
+			resetInterval = true;
 			namespaces[req.params.namespace].frequency = req.body.frequency;
 		}
 		if (req.body.threshold) {
@@ -67,6 +69,13 @@ app.post('/report/:namespace', function (req, res) {
 		namespaces[req.params.namespace].previousFailCount = namespaces[req.params.namespace].failCount;
 		namespaces[req.params.namespace].failCount = 0;
 		namespaces[req.params.namespace].stamp = new Date().getTime();
+
+		if(resetInterval) {
+			// Reset interval if frequency or threshold changed
+			clearInterval(namespaces[req.params.namespace].interval);
+			namespaces[req.params.namespace].interval = setInterval(namespaces[req.params.namespace].check, namespaces[req.params.namespace].frequency);
+		}
+
 		res.sendStatus(200);
 	} else {
 		if (req.body.frequency && req.body.alert) {
@@ -87,9 +96,9 @@ app.post('/report/:namespace', function (req, res) {
 				statusURL: 'https://' + req.hostname + ':' + config.port + '/ui/status/' + req.params.namespace
 			};
 
-			for (const x in config.defaultAlert) {
-				namespaces[req.params.namespace].alert.push(config.defaultAlert[x]);
-			}
+			// for (const x in config.defaultAlert) {
+			// 	namespaces[req.params.namespace].alert.push(config.defaultAlert[x]);
+			// }
 
 			namespaces[req.params.namespace].check = function () {
 				if (!this.namespace.reported) {
