@@ -96,14 +96,6 @@ app.post('/report/:namespace', function (req, res) {
 				statusURL: 'https://' + req.headers['host'] + '/ui/status/' + req.params.namespace
 			};
 
-
-			// console.log(req.url);
-			// console.log(req.headers);
-
-			// for (const x in config.defaultAlert) {
-			// 	namespaces[req.params.namespace].alert.push(config.defaultAlert[x]);
-			// }
-
 			namespaces[req.params.namespace].check = function () {
 				if (!this.namespace.reported) {
 					if (this.namespace.failCount != null) {
@@ -198,9 +190,6 @@ app.get('/ui/status/:namespace', function (req, res) {
 		res.sendStatus(404);
 	}
 });
-
-
-console.log(config);
 
 server.listen(config.port, function () {
 	const address = server.address();
