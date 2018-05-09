@@ -53,6 +53,7 @@ app.use(express.static(__dirname + '/web'));
 
 app.post('/report/:namespace', function (req, res) {
 	if (namespaces[req.params.namespace]) {
+		res.sendStatus(200);
 		console.info('Got a ping from: ' + req.params.namespace);
 		let resetInterval = false;
 		if (req.body.frequency) {
@@ -75,10 +76,9 @@ app.post('/report/:namespace', function (req, res) {
 			clearInterval(namespaces[req.params.namespace].interval);
 			namespaces[req.params.namespace].interval = setInterval(namespaces[req.params.namespace].check, namespaces[req.params.namespace].frequency);
 		}
-
-		res.sendStatus(200);
 	} else {
 		if (req.body.frequency && req.body.alert) {
+			res.sendStatus(200);
 			console.info('Adding new namespace: ' + req.params.namespace);
 			namespaces[req.params.namespace] = {
 				name: req.params.namespace,
@@ -93,8 +93,12 @@ app.post('/report/:namespace', function (req, res) {
 				silence: null,
 				silenceStart: null,
 				stamp: new Date().getTime(),
-				statusURL: 'https://' + req.hostname + ':' + config.port + '/ui/status/' + req.params.namespace
+				statusURL: 'https://' + req.headers['host'] + '/ui/status/' + req.params.namespace
 			};
+
+
+			// console.log(req.url);
+			// console.log(req.headers);
 
 			// for (const x in config.defaultAlert) {
 			// 	namespaces[req.params.namespace].alert.push(config.defaultAlert[x]);
@@ -119,7 +123,6 @@ app.post('/report/:namespace', function (req, res) {
 				namespace: namespaces[req.params.namespace]
 			});
 			namespaces[req.params.namespace].interval = setInterval(namespaces[req.params.namespace].check, namespaces[req.params.namespace].frequency);
-			res.sendStatus(200);
 		} else {
 			console.warn('Bad request received');
 			res.sendStatus(400);
