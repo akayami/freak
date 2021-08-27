@@ -1,6 +1,6 @@
 {
   "name": "@akayami/freak",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A system to watch background tasks",
   "author": "Tomasz Rakowski",
   "license": "ISC",
